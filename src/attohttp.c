@@ -51,6 +51,10 @@ uint16_t _attoHTTP_headers_len;
 void *_attoHTTP_read;
 void *_attoHTTP_write;
 
+#ifndef ATTOHTTP_PRINTF_BUFFER_SIZE
+# define ATTOHTTP_PRINTF_BUFFER_SIZE 128
+#endif
+
 /***************************************************************************
  * @endcond
  ***************************************************************************/
@@ -170,16 +174,22 @@ attoHTTPwrite(const char *buffer, uint16_t len)
     }
     return ret;
 }
+
 uint16_t
 attoHTTPprintf(const char *format, ...)
 {
-    char buffer[128];
+    char buffer[ATTOHTTP_PRINTF_BUFFER_SIZE];
     uint16_t count;
     va_list ap;
     va_start(ap, format);
     count = vsnprintf(buffer, 128, format, ap);
     va_end(ap);
     return attoHTTPwrite(buffer, count);
+}
+uint16_t
+attoHTTPprint(const char *buffer)
+{
+    return attoHTTPwrite(buffer, strlen(buffer));
 }
 /**
  * @brief This prints out the OK message
@@ -189,7 +199,7 @@ attoHTTPprintf(const char *format, ...)
 uint8_t
 attoHTTPOK()
 {
-    return attoHTTPprintf("%s 200 OK\r\n", HTTP_VERSION);
+    return attoHTTPprint(HTTP_VERSION " 200 OK\r\n");
 }
 /***************************************************************************
  * @endcond

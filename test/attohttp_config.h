@@ -30,4 +30,15 @@
 #ifndef __ATTOHTTP_CONFIG_H__
 #define __ATTOHTTP_CONFIG_H__
 
+/**
+ * @brief This is the size of the character buffer that printf uses
+ *
+ * This will be dynamically allocated when printf is called.  The bigger
+ * it is, the larger the strings that can be made are.
+ *
+ * Defaults to 128 if not set
+ */
+#undef ATTOHTTP_PRINTF_BUFFER_SIZE
+
+
 #endif // #ifndef __ATTOHTTP_CONFIG_H__
