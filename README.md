@@ -26,12 +26,12 @@ the software must compile and run on x86 machines, at least.
 
 Anything in the software that can be tested, should be tested.
 
-# Documentation
+## Documentation
 
 This project uses doxygen to create documentation.  All functions and files in the src/
 directory should be documented.
 
-# Pull Requests
+## Pull Requests
 
 Pull requests are welcomed, as long as they are properly tested and documented.
 
@@ -59,8 +59,6 @@ Pull requests are welcomed, as long as they are properly tested and documented.
  SOFTWARE.
 
 ## FCTX (test/fct.h) License
-
- Copyright (c) 2008 Ian Blumel.  All rights reserved.
 
  FCTX (Fast C Test) Unit Testing Framework
 
