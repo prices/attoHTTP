@@ -30,17 +30,96 @@
 
 
 #include <stdio.h>
+#include <inttypes.h>
 #include <string.h>
+#include <ctype.h>
+#include "attohttp.h"
 
+/***************************************************************************
+ *                              Private Parameters
+ * @cond dev
+ ***************************************************************************/
+httpmethod_t _attoHTTPCode;
+httpversion_t _attoHTTPVersion;
+char * _attoHTTP_url;
+/***************************************************************************
+ * @endcond
+ ***************************************************************************/
+
+
+/***************************************************************************
+ *                              Private Members
+ * @cond dev
+ ***************************************************************************/
+/**
+ * @brief Finds the method, url, and HTTP version
+ *
+ * This function sets up the server.  It should be called once per session,
+ * with the data from the client stored in *buffer.
+ *
+ * @param buffer This is the buffer that the incoming client data is stored in.
+ *               The calling program can decide how big it should be, but it must
+ *               be big enough for all of the headers.
+ * @param len    This is the total length of the data in the buffer.
+ *
+ * @return @see returncode_t for details
+ */
+uint8_t
+attoHTTPGetMethod(char *buffer, uint16_t len)
+{
+    // Get rid of any white space
+    while (isspace(*buffer) && (len > 0)) {
+        buffer++;
+        len--;
+    }
+    if (strncmp(HTTP_METHOD_GET, buffer, sizeof(HTTP_METHOD_GET)) == 0) {
+        _attoHTTPCode = GET;
+        len -= sizeof(HTTP_METHOD_GET) + 1;
+        buffer += sizeof(HTTP_METHOD_GET) + 1;
+    } else if (strncmp(HTTP_METHOD_POST, buffer, sizeof(HTTP_METHOD_POST)) == 0) {
+        _attoHTTPCode = POST;
+        len -= sizeof(HTTP_METHOD_POST) + 1;
+        buffer += sizeof(HTTP_METHOD_GET) + 1;
+    } else if (strncmp(HTTP_METHOD_PUT, buffer, sizeof(HTTP_METHOD_PUT)) == 0) {
+        _attoHTTPCode = PUT;
+        len -= sizeof(HTTP_METHOD_PUT) + 1;
+        buffer += sizeof(HTTP_METHOD_PUT) + 1;
+    } else if (strncmp(HTTP_METHOD_DELETE, buffer, sizeof(HTTP_METHOD_DELETE)) == 0) {
+        _attoHTTPCode = POST;
+        len -= sizeof(HTTP_METHOD_DELETE) + 1;
+        buffer += sizeof(HTTP_METHOD_DELETE) + 1;
+    } else if (strncmp(HTTP_METHOD_PATCH, buffer, sizeof(HTTP_METHOD_PATCH)) == 0) {
+        _attoHTTPCode = POST;
+        len -= sizeof(HTTP_METHOD_PATCH) + 1;
+        buffer += sizeof(HTTP_METHOD_PATCH) + 1;
+    }
+    _attoHTTP_url = buffer;
+    return 1;
+}
+
+/***************************************************************************
+ * @endcond
+ ***************************************************************************/
 
 /**
- * @brief Sets everything up.
+ * @brief Main function that runs everything
  *
- * This function sets up the server.  It should be called once.
+ * This function sets up the server.  It should be called once per session,
+ * with the data from the client stored in *buffer.
  *
- * @return none
+ * @param buffer This is the buffer that the incoming client data is stored in.
+ *               The calling program can decide how big it should be, but it must
+ *               be big enough for all of the headers.
+ * @param len    This is the total length of the data in the buffer.
+ *
+ * @return @see returncode_t for details
  */
-void
-attoHTTPInit(void)
+returncode_t
+attoHTTPExecute(char *buffer, uint16_t len)
 {
+    returncode_t ret = OK;
+
+
+    return ret;
+
 }
