@@ -30,3 +30,15 @@
 
 # Debug files
 *.dSYM/
+
+docs
+build
+
+.kdev4
+*.kdev4
+
+test/*-Results.xml
+*.gcda
+*.gcno
+test/run_test
+
