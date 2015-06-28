@@ -38,3 +38,37 @@ FCT_BGN()
 FCT_END();
 
 
+uint16_t
+attoHTTPGetByte(void *extra, char *byte)
+{
+    static char *str = NULL;
+    static uint16_t count = 0;
+    if (str != extra) {
+        str = (char *)extra;
+        count = 0;
+    }
+    if ((str != NULL) && (*byte != 0) && (byte != 0)) {
+        str[count] = *byte;
+        count++;
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+uint16_t
+attoHTTPSetByte(void *extra, char byte)
+{
+    static char *str = NULL;
+    static uint16_t count = 0;
+    if (str != extra) {
+        str = (char *)extra;
+        count = 0;
+    }
+    if (str != NULL) {
+        str[count] = byte;
+        count++;
+    }
+    return 1;
+}
+

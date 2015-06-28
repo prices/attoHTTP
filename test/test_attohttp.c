@@ -59,6 +59,15 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
     * @return void
     */
     FCT_TEST_BGN(testGET_001) {
+        returncode_t ret;
+        char read_buffer[1024];
+        char write_buffer[1024];
+        memset(write_buffer, 0, 1024);
+        memset(read_buffer, 0, 1024);
+        strncpy(read_buffer, "GET /index.html HTTP/1.0", 1024);
+        ret = attoHTTPExecute((void *)read_buffer, (void *)write_buffer);
+        fct_xchk((ret == OK), "Return was not OK");
+        fct_chk_eq_str("HTTP/1.0 200 OK\r\n", write_buffer);
     }
     FCT_TEST_END()
 }

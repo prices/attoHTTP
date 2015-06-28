@@ -10,12 +10,12 @@ TEST_NAME:=
 
 
 
-CFLAGS_TARGET+=-fprofile-arcs -ftest-coverage -Wall -Werror -pedantic -std=gnu11
+CFLAGS_TARGET+=-fprofile-arcs -ftest-coverage -Wall -Werror -pedantic -std=c11
 CFLAGS+=-D_TEST_ \
 	-I$(shell pwd) \
 	-I$(BASEDIR)/src \
 	-Wno-pointer-to-int-cast
-CFLAGS_TEST+= -Wall -Werror
+CFLAGS_TEST+= -Wall -Werror -std=gnu11
 LDFLAGS+=
 GCC:=gcc $(CFLAGS)
 

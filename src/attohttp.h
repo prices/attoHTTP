@@ -36,6 +36,12 @@
 #define HTTP_METHOD_POST "POST"
 #define HTTP_METHOD_PATCH "PATCH"
 #define HTTP_METHOD_DELETE "DELETE"
+
+#define HTTP_VERSION_1_0 "HTTP/1.0"
+#define HTTP_VERSION_1_1 "HTTP/1.1"
+
+#define HTTP_VERSION HTTP_VERSION_1_0
+
 /**
  * @brief The return status from the HTTP code
  *
@@ -60,7 +66,8 @@ typedef enum
     POST,
     PUT,
     DELETE,
-    PATCH
+    PATCH,
+    NOTSUPPORTED
 } httpmethod_t;
 
 /**
@@ -70,9 +77,42 @@ typedef enum
  */
 typedef enum
 {
+    VUNKNOWN,
     V1_0,
     V1_1
 } httpversion_t;
+
+
+returncode_t attoHTTPExecute(void *read, void *write);
+
+/**
+ * @brief User function to get a byte
+ *
+ * This function must be defined by the user.  It will allow this software to
+ * get bytes from any source.
+ *
+ * @param read This is whatever it needs to be.  Could be a socket, or an object,
+ *              or something totally different.  It will be called with whatever
+ *              extra argument was given to the execute routine.
+ * @param byte  A pointer to the byte we need to put the next character in.
+ *
+ * @return 1 if a character was read, 0 otherwise.
+ */
+uint16_t attoHTTPGetByte(void *read, char *byte);
+/**
+ * @brief User function to set a byte
+ *
+ * This function must be defined by the user.  It will allow this software to
+ * set bytes to any destination.
+ *
+ * @param write This is whatever it needs to be.  Could be a socket, or an object,
+ *              or something totally different.  It will be called with whatever
+ *              extra argument was given to the execute routine.
+ * @param byte  A pointer to the byte we need to put the next character in.
+ *
+ * @return 1 if a character was read, 0 otherwise.
+ */
+uint16_t attoHTTPSetByte(void *write, char byte);
 
 
 #endif // #ifndef __ATTOHTTP_H__

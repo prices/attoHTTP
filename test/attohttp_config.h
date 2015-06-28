@@ -30,6 +30,4 @@
 #ifndef __ATTOHTTP_CONFIG_H__
 #define __ATTOHTTP_CONFIG_H__
 
-
-
 #endif // #ifndef __ATTOHTTP_CONFIG_H__
