@@ -36,24 +36,27 @@
 #include <ctype.h>
 #include "attohttp.h"
 
+#ifndef ATTOHTTP_PRINTF_BUFFER_SIZE
+# define ATTOHTTP_PRINTF_BUFFER_SIZE 128
+#endif
+#ifndef ATTOHTTP_URL_BUFFER_SIZE
+# define ATTOHTTP_URL_BUFFER_SIZE 64
+#endif
+
+
 /***************************************************************************
  *                              Private Parameters
  * @cond dev
  ***************************************************************************/
-httpmethod_t _attoHTTPCode;
+httpmethod_t _attoHTTPMethod;
 httpversion_t _attoHTTPVersion;
-char *_attoHTTP_url;
-char *_attoHTTP_headers;
+char _attoHTTP_url[ATTOHTTP_URL_BUFFER_SIZE];
 char *_attoHTTP_body;
 uint16_t _attoHTTP_url_len;
 uint16_t _attoHTTP_body_len;
-uint16_t _attoHTTP_headers_len;
 void *_attoHTTP_read;
 void *_attoHTTP_write;
 
-#ifndef ATTOHTTP_PRINTF_BUFFER_SIZE
-# define ATTOHTTP_PRINTF_BUFFER_SIZE 128
-#endif
 
 /***************************************************************************
  * @endcond
@@ -72,97 +75,120 @@ void *_attoHTTP_write;
 void
 attoHTTPInit(void)
 {
-    _attoHTTPCode = NOTSUPPORTED;
+    _attoHTTPMethod = NOTSUPPORTED;
     _attoHTTPVersion = VUNKNOWN;
-    _attoHTTP_url = NULL;
-    _attoHTTP_headers = NULL;
     _attoHTTP_body = NULL;
     _attoHTTP_url_len = 0;
     _attoHTTP_body_len = 0;
-    _attoHTTP_headers_len = 0;
 }
 /**
  * @brief Finds the method, url, and HTTP version
  *
- * This function sets up the server.  It should be called once per session,
- * with the data from the client stored in *buffer.
- *
- * @param buffer This is the buffer that the incoming client data is stored in.
- *               The calling program can decide how big it should be, but it must
- *               be big enough for all of the headers.
- * @param len    This is the total length of the data in the buffer.
- *
- * @return @see returncode_t for details
+ * @return 1 if there is more to read, 0 if done reading
  */
 uint8_t
-attoHTTPParseInitialRequestLine(char *buffer, uint16_t len)
+attoHTTPParseMethod()
 {
+    uint8_t ret;
+    char c;
+    char buffer[10];
+    uint16_t ptr;
     // Remove any extra space
-    while (isblank(*buffer) && (len > 0)) {
-        buffer++;
-        len--;
-    }
-    uint8_t ctr = 0;
-    // Get rid of any white space
-    if (strncmp(HTTP_METHOD_GET, buffer, sizeof(HTTP_METHOD_GET)) == 0) {
-        _attoHTTPCode = GET;
-        len -= sizeof(HTTP_METHOD_GET) + 1;
-        buffer += sizeof(HTTP_METHOD_GET) + 1;
-    } else if (strncmp(HTTP_METHOD_POST, buffer, sizeof(HTTP_METHOD_POST)) == 0) {
-        _attoHTTPCode = POST;
-        len -= sizeof(HTTP_METHOD_POST) + 1;
-        buffer += sizeof(HTTP_METHOD_GET) + 1;
-    } else if (strncmp(HTTP_METHOD_PUT, buffer, sizeof(HTTP_METHOD_PUT)) == 0) {
-        _attoHTTPCode = PUT;
-        len -= sizeof(HTTP_METHOD_PUT) + 1;
-        buffer += sizeof(HTTP_METHOD_PUT) + 1;
-    } else if (strncmp(HTTP_METHOD_DELETE, buffer, sizeof(HTTP_METHOD_DELETE)) == 0) {
-        _attoHTTPCode = POST;
-        len -= sizeof(HTTP_METHOD_DELETE) + 1;
-        buffer += sizeof(HTTP_METHOD_DELETE) + 1;
-    } else if (strncmp(HTTP_METHOD_PATCH, buffer, sizeof(HTTP_METHOD_PATCH)) == 0) {
-        _attoHTTPCode = POST;
-        len -= sizeof(HTTP_METHOD_PATCH) + 1;
-        buffer += sizeof(HTTP_METHOD_PATCH) + 1;
-    }
-    // Remove any extra space
-    while (isblank(*buffer) && (len > 0)) {
-        buffer++;
-        len--;
-    }
-    _attoHTTP_url_len = 0;
-    _attoHTTP_url = buffer;
-    // Get the URL Length
-    while (!isblank(*buffer) && (len > 0)) {
-        buffer++;
-        _attoHTTP_url_len++;
-        len--;
-    }
-    // Remove any extra space
-    while (isblank(*buffer) && (len > 0)) {
-        buffer++;
-        len--;
-    }
-    if (len > 0) {
-        _attoHTTPVersion = VUNKNOWN;
-        if (strncmp(HTTP_VERSION_1_0, buffer, sizeof(HTTP_VERSION_1_0)) == 0) {
-            _attoHTTPVersion = V1_0;
-            len-=sizeof(HTTP_VERSION_1_0);
-            buffer += sizeof(HTTP_VERSION_1_0);
-        } else if (strncmp(HTTP_VERSION_1_1, buffer, sizeof(HTTP_VERSION_1_1)) == 0) {
-            _attoHTTPCode = V1_1;
-            len-=sizeof(HTTP_VERSION_1_1);
-            buffer += sizeof(HTTP_VERSION_1_1);
+    do {
+        ret = attoHTTPGetByte(_attoHTTP_read, &c);
+    } while (isblank(c) && ret);
+
+    if (ret) {
+        ptr = 0;
+        do {
+            buffer[ptr++] = c;
+            ret = attoHTTPGetByte(_attoHTTP_read, &c);
+        } while (!isblank(c) && ret && (ptr < 9));
+        buffer[ptr] = 0;
+
+        // Get rid of any white space
+        if (strncmp(HTTP_METHOD_GET, buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = GET;
+        } else if (strncmp(HTTP_METHOD_POST, buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = POST;
+        } else if (strncmp(HTTP_METHOD_PUT, buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = PUT;
+        } else if (strncmp(HTTP_METHOD_DELETE, buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = DELETE;
+        } else if (strncmp(HTTP_METHOD_PATCH, buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = PATCH;
         }
     }
-    while (((*buffer == '\n') || (*buffer == '\r')) && (len > 0) && ctr < 2) {
-        buffer++;
-        _attoHTTP_url_len++;
-        len--;
-        ctr++;
+    return ret;
+
+}
+/**
+ * @brief Finds the method, url, and HTTP version
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+uint8_t
+attoHTTPParseURI()
+{
+    uint8_t ret;
+    char c;
+    // Remove any extra space
+    do {
+        ret = attoHTTPGetByte(_attoHTTP_read, &c);
+    } while (isblank(c) && (ret != 0));
+
+    if (ret) {
+        _attoHTTP_url_len = 0;
+        do {
+            _attoHTTP_url[_attoHTTP_url_len++] = c;
+            ret = attoHTTPGetByte(_attoHTTP_read, &c);
+
+        } while (!isblank(c) && ret && (_attoHTTP_url_len < (sizeof(_attoHTTP_url) - 1)));
+        _attoHTTP_url[_attoHTTP_url_len] = 0;
     }
-    _attoHTTP_headers = buffer;
-    return (len >= 0);
+    return ret;
+
+}
+/**
+ * @brief Finds the method, url, and HTTP version
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+uint8_t
+attoHTTPParseVersion()
+{
+    uint8_t ret;
+    char c;
+    char buffer[10];
+    uint16_t ptr;
+    // Remove any extra space
+    do {
+        ret = attoHTTPGetByte(_attoHTTP_read, &c);
+    } while (isblank(c) && (ret != 0));
+
+    if (ret) {
+        ptr = 0;
+        do {
+            buffer[ptr++] = c;
+            ret = attoHTTPGetByte(_attoHTTP_read, &c);
+        } while (!isblank(c) && ret && (ptr < (sizeof(buffer) - 1)));
+        buffer[ptr] = 0;
+        _attoHTTPVersion = VUNKNOWN;
+
+        if (strncmp(HTTP_VERSION_1_0, buffer, ptr) == 0) {
+            _attoHTTPVersion = V1_0;
+        } else if (strncmp(HTTP_VERSION_1_1, buffer, ptr) == 0) {
+            _attoHTTPVersion = V1_1;
+        }
+    }
+    if (ret) {
+        // Remove any extra space
+        do {
+            ret = attoHTTPGetByte(_attoHTTP_read, &c);
+        } while (isspace(c) && (ret != 0));
+    }
+
+    return ret;
 }
 
 uint16_t
@@ -225,7 +251,13 @@ attoHTTPExecute(void *read, void *write)
     _attoHTTP_read = read;
     _attoHTTP_write = write;
 
+    // Init all of the variables.
     attoHTTPInit();
+    // Parse the first line
+    attoHTTPParseMethod();
+    attoHTTPParseURI();
+    attoHTTPParseVersion();
+
 
     attoHTTPOK();
 

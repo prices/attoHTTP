@@ -47,8 +47,8 @@ attoHTTPGetByte(void *extra, char *byte)
         str = (char *)extra;
         count = 0;
     }
-    if ((str != NULL) && (*byte != 0) && (byte != 0)) {
-        str[count] = *byte;
+    if ((str != NULL) && (byte != NULL)) {
+        *byte = str[count];
         count++;
     } else {
         return 0;
