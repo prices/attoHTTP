@@ -36,6 +36,7 @@
 
 #define WRITE_BUFFER_SIZE 1024
 
+char write_buffer[WRITE_BUFFER_SIZE];
 
 FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
 {
@@ -45,6 +46,8 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
     * @return 0 success, otherwise failure
     */
     FCT_SETUP_BGN() {
+        TestInit();
+        memset(write_buffer, 0, WRITE_BUFFER_SIZE);
     }
     FCT_SETUP_END();
     /**
@@ -55,14 +58,28 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
     FCT_TEARDOWN_BGN() {
     } FCT_TEARDOWN_END();
     /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testMethodUnsupportedMethod) {
+        returncode_t ret;
+
+        ret = attoHTTPExecute(
+            (void *)"BADMETHOD /index.html HTTP/1.0\r\n\r\n",
+            (void *)write_buffer
+        );
+        fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'");
+        fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer);
+    }
+    FCT_TEST_END()
+    /**
     * @brief This tests the empty queue functions
     *
     * @return void
     */
     FCT_TEST_BGN(testGET_001) {
         returncode_t ret;
-        char write_buffer[WRITE_BUFFER_SIZE];
-        memset(write_buffer, 0, WRITE_BUFFER_SIZE);
 
         ret = attoHTTPExecute(
             (void *)"GET /index.html HTTP/1.0\r\n\r\n",

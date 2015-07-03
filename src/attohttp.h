@@ -52,7 +52,9 @@
 typedef enum
 {
     OK,
-    SERVER_ERROR,
+    UNSUPPORTED,
+    BADREQUEST,
+    INTERNAL_ERROR,
 } returncode_t;
 
 /**

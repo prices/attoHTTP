@@ -32,5 +32,7 @@
 
 #include "fct.h"
 
+void TestInit(void);
+
 #endif
 

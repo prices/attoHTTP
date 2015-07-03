@@ -31,6 +31,9 @@
 #include <inttypes.h>
 #include "test.h"
 
+char *TestWriteString, *TestReadString;
+uint16_t TestWriteCount, TestReadCount;
+
 FCT_BGN()
 {
     FCTMF_SUITE_CALL(test_attohttp);
@@ -38,36 +41,43 @@ FCT_BGN()
 FCT_END();
 
 
+void
+TestInit(void)
+{
+    TestWriteString = NULL;
+    TestReadString = NULL;
+    TestWriteCount = 0;
+    TestReadCount = 0;
+}
+
+
 uint16_t
 attoHTTPGetByte(void *extra, char *byte)
 {
-    static char *str = NULL;
-    static uint16_t count = 0;
-    if (str != extra) {
-        str = (char *)extra;
-        count = 0;
+    if (TestReadString == NULL) {
+        TestReadString = (char *)extra;
     }
-    if ((str != NULL) && (byte != NULL)) {
-        *byte = str[count];
-        count++;
+    if ((TestReadString != NULL) && (byte != NULL)) {
+        *byte = TestReadString[TestReadCount];
+        if (*byte > 0) {
+            // If we get the end of string, just keep returning it.
+            TestReadCount++;
+        }
     } else {
         return 0;
     }
-    return 1;
+    return (*byte == 0) ? 0 : 1;
 }
 
 uint16_t
 attoHTTPSetByte(void *extra, char byte)
 {
-    static char *str = NULL;
-    static uint16_t count = 0;
-    if (str != extra) {
-        str = (char *)extra;
-        count = 0;
+    if (TestWriteString == NULL) {
+        TestWriteString = (char *)extra;
     }
-    if (str != NULL) {
-        str[count] = byte;
-        count++;
+    if (TestWriteString != NULL) {
+        TestWriteString[TestWriteCount] = byte;
+        TestWriteCount++;
     }
     return 1;
 }

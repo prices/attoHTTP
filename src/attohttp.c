@@ -56,7 +56,8 @@ uint16_t _attoHTTP_url_len;
 uint16_t _attoHTTP_body_len;
 void *_attoHTTP_read;
 void *_attoHTTP_write;
-
+uint8_t _headersDone;
+returncode_t _returnCode;
 
 /***************************************************************************
  * @endcond
@@ -80,13 +81,39 @@ attoHTTPInit(void)
     _attoHTTP_body = NULL;
     _attoHTTP_url_len = 0;
     _attoHTTP_body_len = 0;
+    _headersDone = 0;
+    _returnCode = OK;
 }
 /**
  * @brief Finds the method, url, and HTTP version
  *
  * @return 1 if there is more to read, 0 if done reading
  */
-uint8_t
+int8_t
+attoHTTPParseEOL(char c)
+{
+    uint8_t ret = 1;
+    int8_t eolCount = 0;
+    // Remove any extra space
+    while (isspace(c) && (ret != 0)) {
+        if (c == '\n') {
+            eolCount++;
+        }
+        ret = attoHTTPGetByte(_attoHTTP_read, &c);
+    }
+    if (eolCount > 1) {
+        _headersDone = 1;
+    } else if (eolCount == 0) {
+        _returnCode = BADREQUEST;
+    }
+    return eolCount;
+}
+/**
+ * @brief Finds the method, url, and HTTP version
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+int8_t
 attoHTTPParseMethod()
 {
     uint8_t ret;
@@ -117,6 +144,8 @@ attoHTTPParseMethod()
             _attoHTTPMethod = DELETE;
         } else if (strncmp(HTTP_METHOD_PATCH, buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = PATCH;
+        } else {
+            _returnCode = UNSUPPORTED;
         }
     }
     return ret;
@@ -127,7 +156,7 @@ attoHTTPParseMethod()
  *
  * @return 1 if there is more to read, 0 if done reading
  */
-uint8_t
+int8_t
 attoHTTPParseURI()
 {
     uint8_t ret;
@@ -154,7 +183,7 @@ attoHTTPParseURI()
  *
  * @return 1 if there is more to read, 0 if done reading
  */
-uint8_t
+int8_t
 attoHTTPParseVersion()
 {
     uint8_t ret;
@@ -171,7 +200,7 @@ attoHTTPParseVersion()
         do {
             buffer[ptr++] = c;
             ret = attoHTTPGetByte(_attoHTTP_read, &c);
-        } while (!isblank(c) && ret && (ptr < (sizeof(buffer) - 1)));
+        } while (!isspace(c) && ret && (ptr < (sizeof(buffer) - 1)));
         buffer[ptr] = 0;
         _attoHTTPVersion = VUNKNOWN;
 
@@ -181,16 +210,24 @@ attoHTTPParseVersion()
             _attoHTTPVersion = V1_1;
         }
     }
-    if (ret) {
-        // Remove any extra space
-        do {
-            ret = attoHTTPGetByte(_attoHTTP_read, &c);
-        } while (isspace(c) && (ret != 0));
-    }
+    ret = attoHTTPParseEOL(c);
 
     return ret;
 }
+/**
+ * @brief Finds the method, url, and HTTP version
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+int8_t
+attoHTTPParseHeaders()
+{
+    int8_t ret = 1;
+    if (_headersDone == 0) {
 
+    }
+    return ret;
+}
 uint16_t
 attoHTTPwrite(const char *buffer, uint16_t len)
 {
@@ -227,6 +264,36 @@ attoHTTPOK()
 {
     return attoHTTPprint(HTTP_VERSION " 200 OK\r\n");
 }
+/**
+ * @brief This prints out the OK message
+ *
+ * @return The number of characters printed
+ */
+uint8_t
+attoHTTPBadRequest()
+{
+    return attoHTTPprint(HTTP_VERSION " 400 Bad Request\r\n");
+}
+/**
+ * @brief This prints out the OK message
+ *
+ * @return The number of characters printed
+ */
+uint8_t
+attoHTTPInternalError()
+{
+    return attoHTTPprint(HTTP_VERSION " 500 Internal Error\r\n");
+}
+/**
+ * @brief This prints out the OK message
+ *
+ * @return The number of characters printed
+ */
+uint8_t
+attoHTTPNotImplemented()
+{
+    return attoHTTPprint(HTTP_VERSION " 501 Not Implemented\r\n");
+}
 /***************************************************************************
  * @endcond
  ***************************************************************************/
@@ -247,7 +314,6 @@ attoHTTPOK()
 returncode_t
 attoHTTPExecute(void *read, void *write)
 {
-    returncode_t ret = OK;
     _attoHTTP_read = read;
     _attoHTTP_write = write;
 
@@ -255,12 +321,25 @@ attoHTTPExecute(void *read, void *write)
     attoHTTPInit();
     // Parse the first line
     attoHTTPParseMethod();
-    attoHTTPParseURI();
-    attoHTTPParseVersion();
 
-
-    attoHTTPOK();
-
-    return ret;
+    if (_returnCode == OK) {
+        attoHTTPParseURI();
+        attoHTTPParseVersion();
+    }
+    switch (_returnCode) {
+        case OK:
+            attoHTTPOK();
+            break;
+        case UNSUPPORTED:
+            attoHTTPNotImplemented();
+            break;
+        case BADREQUEST:
+            attoHTTPBadRequest();
+            break;
+        default:
+            attoHTTPInternalError();
+            break;
+    }
+    return _returnCode;
 
 }
