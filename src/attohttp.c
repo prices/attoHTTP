@@ -354,8 +354,11 @@ uint16_t
 attoHTTPwrite(const char *buffer, uint16_t len)
 {
     uint16_t ret = 0;
+    char c;
     while (len-- > 0) {
-        ret += attoHTTPWriteC(*buffer++);
+        c = *buffer++;
+        // This makes sure that what we are sending out is UTF-8 compatible.
+        ret += attoHTTPWriteC(c & 0x7F);
     }
     return ret;
 }
