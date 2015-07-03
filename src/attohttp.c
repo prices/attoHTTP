@@ -76,6 +76,7 @@ uint8_t _attoHTTP_firstlineSent;
 returncode_t _attoHTTP_returnCode;
 mimetypes_t _attoHTTP_accept;
 mimetypes_t _attoHTTP_contenttype;
+uint32_t _attoHTTP_contentlength;
 attoHTTPPage _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
 
 /** This is a map of our mime types */
@@ -115,6 +116,7 @@ attoHTTPInitRun(void)
     _attoHTTP_url_params = NULL;
     _attoHTTP_accept = TEXT_HTML;
     _attoHTTP_contenttype = TEXT_HTML;
+    _attoHTTP_contentlength = 0;
 
 }
 
@@ -417,9 +419,9 @@ attoHTTPFindPage(void)
         for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
             if (0 == strncmp(_attoHTTP_url, _attoHTTPPages[i].url, sizeof(_attoHTTPPages[i].url))) {
                 _attoHTTP_contenttype = _attoHTTPPages[i].type;
+                _attoHTTP_contentlength = _attoHTTPPages[i].size;
                 attoHTTPSendHeaders();
                 attoHTTPwrite(_attoHTTPPages[i].content, _attoHTTPPages[i].size);
-                attoHTTPwrite("\r\nss", 4);
                 ret = 1;
                 break;
             }
@@ -535,6 +537,9 @@ attoHTTPSendHeaders()
     }
     if (_attoHTTP_headersSent == 0) {
         chars += attoHTTPprintf("Content-Type: %s\r\n", _mimetypes[_attoHTTP_contenttype]);
+        if (_attoHTTP_contentlength > 0) {
+            chars += attoHTTPprintf("Content-Length: %d\r\n", _attoHTTP_contentlength);
+        }
         chars += attoHTTPprint("\r\n");
         _attoHTTP_headersSent = 1;
     }

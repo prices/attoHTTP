@@ -35,7 +35,7 @@
 #include "test.h"
 
 static const char default_content[] = "Default";
-static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\nDefault";
+static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 1024
 
