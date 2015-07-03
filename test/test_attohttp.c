@@ -34,6 +34,9 @@
 #include "attohttp.h"
 #include "test.h"
 
+static const char default_content[] = "Default";
+static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\nDefault";
+
 #define WRITE_BUFFER_SIZE 1024
 
 char write_buffer[WRITE_BUFFER_SIZE];
@@ -48,6 +51,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
     FCT_SETUP_BGN() {
         TestInit();
         memset(write_buffer, 0, WRITE_BUFFER_SIZE);
+        attoHTTPInit();
     }
     FCT_SETUP_END();
     /**
@@ -74,19 +78,35 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
     }
     FCT_TEST_END()
     /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testMethodExtraSpaces) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET         /index.html HTTP/1.0\r\n\r\n",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_chk_eq_str(default_return, write_buffer);
+    }
+    FCT_TEST_END()
+    /**
     * @brief This tests the empty queue functions
     *
     * @return void
     */
     FCT_TEST_BGN(testGET_001) {
         returncode_t ret;
-
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
         ret = attoHTTPExecute(
             (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
             (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");
-        fct_chk_eq_str("HTTP/1.0 200 OK\r\n", write_buffer);
+        fct_chk_eq_str(default_return, write_buffer);
     }
     FCT_TEST_END()
 }

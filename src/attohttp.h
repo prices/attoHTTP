@@ -30,6 +30,7 @@
 #ifndef __ATTOHTTP_H__
 #define __ATTOHTTP_H__
 
+#include "attohttp_config.h"
 
 #define HTTP_METHOD_GET "GET"
 #define HTTP_METHOD_PUT "PUT"
@@ -41,6 +42,10 @@
 #define HTTP_VERSION_1_1 "HTTP/1.1"
 
 #define HTTP_VERSION HTTP_VERSION_1_0
+
+#ifndef ATTOHTTP_PAGE_URL_SIZE
+#  define ATTOHTTP_PAGE_URL_SIZE 32
+#endif
 
 /**
  * @brief The return status from the HTTP code
@@ -92,12 +97,25 @@ typedef enum
  */
 typedef enum
 {
-    application_json = 0,
-    text_html = 1,
-    text_plain = 2
+    APPLICATION_JSON = 0,
+    TEXT_HTML = 1,
+    TEXT_PLAIN = 2
 } mimetypes_t;
-
 #define ATTOHTTP_MIME_TYPES 3
+
+
+/**
+ * @brief This keeps track of our pages
+ *
+ * This struct keeps track of pages and what to load for them.
+ */
+typedef struct {
+    char url[ATTOHTTP_PAGE_URL_SIZE];
+    char *content;
+    uint16_t size;
+    mimetypes_t type;
+} attoHTTPPage;
+
 
 returncode_t attoHTTPExecute(void *read, void *write);
 uint8_t attoHTTPOK();
@@ -107,6 +125,8 @@ uint8_t attoHTTPNotFound();
 uint8_t attoHTTPInternalError();
 uint8_t attoHTTPNotImplemented();
 uint8_t attoHTTPSendHeaders();
+void attoHTTPInit(void);
+uint8_t attoHTTPAddPage(char *url, char *page, uint16_t page_len, mimetypes_t type);
 
 /**
  * @brief User function to get a byte

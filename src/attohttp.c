@@ -49,6 +49,9 @@
 #ifndef ATTOHTTP_HEADER_VALUE_SIZE
 # define ATTOHTTP_HEADER_VALUE_SIZE 64
 #endif
+#ifndef ATTOHTTP_PAGE_BUFFERS
+# define ATTOHTTP_PAGE_BUFFERS 8
+#endif
 
 
 #define _attoHTTPPushC(char) _attoHTTP_extra_c = char
@@ -62,6 +65,7 @@ httpversion_t _attoHTTPVersion;
 char _attoHTTP_url[ATTOHTTP_URL_BUFFER_SIZE];
 char _attoHTTP_extra_c;
 char *_attoHTTP_body;
+char *_attoHTTP_url_params;
 uint16_t _attoHTTP_url_len;
 uint16_t _attoHTTP_body_len;
 void *_attoHTTP_read;
@@ -71,12 +75,14 @@ uint8_t _attoHTTP_headersSent;
 uint8_t _attoHTTP_firstlineSent;
 returncode_t _attoHTTP_returnCode;
 mimetypes_t _attoHTTP_accept;
+mimetypes_t _attoHTTP_contenttype;
+attoHTTPPage _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
 
 /** This is a map of our mime types */
 static const char *_mimetypes[] = {
-    [application_json] = "application/json",
-    [text_html] = "text/html",
-    [text_plain] = "text/plain",
+    [APPLICATION_JSON] = "application/json",
+    [TEXT_HTML] = "text/html",
+    [TEXT_PLAIN] = "text/plain",
 };
 
 /***************************************************************************
@@ -94,7 +100,7 @@ static const char *_mimetypes[] = {
  * @return none
  */
 static inline void
-attoHTTPInit(void)
+attoHTTPInitRun(void)
 {
     _attoHTTPMethod = NOTSUPPORTED;
     _attoHTTPVersion = VUNKNOWN;
@@ -106,6 +112,10 @@ attoHTTPInit(void)
     _attoHTTP_firstlineSent = 0;
     _attoHTTP_returnCode = OK;
     _attoHTTP_extra_c = -1;
+    _attoHTTP_url_params = NULL;
+    _attoHTTP_accept = TEXT_HTML;
+    _attoHTTP_contenttype = TEXT_HTML;
+
 }
 
 /**
@@ -241,6 +251,10 @@ attoHTTPParseURI()
             if (isblank(_attoHTTP_url[_attoHTTP_url_len])) {
                 break;
             } else {
+                if (_attoHTTP_url[_attoHTTP_url_len] == '?') {
+                    _attoHTTP_url[_attoHTTP_url_len] = 0;
+                    _attoHTTP_url_params = &_attoHTTP_url[_attoHTTP_url_len + 1];
+                }
                 _attoHTTP_url_len++;
             }
         } while (ret && (_attoHTTP_url_len < (sizeof(_attoHTTP_url) - 1)));
@@ -389,9 +403,63 @@ attoHTTPFirstLine(const char *buffer)
     }
     return chars;
 }
+/**
+ * @brief Finds the method, url, and HTTP version
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+int8_t
+attoHTTPFindPage(void)
+{
+    int8_t ret = 0;
+    uint8_t i;
+    if (_attoHTTPMethod == GET) {
+        for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
+            if (0 == strncmp(_attoHTTP_url, _attoHTTPPages[i].url, sizeof(_attoHTTPPages[i].url))) {
+                _attoHTTP_contenttype = _attoHTTPPages[i].type;
+                attoHTTPSendHeaders();
+                attoHTTPwrite(_attoHTTPPages[i].content, _attoHTTPPages[i].size);
+                attoHTTPwrite("\r\nss", 4);
+                ret = 1;
+                break;
+            }
+        }
+    } else {
+        _attoHTTP_returnCode = NOTSUPPORTED;
+        ret = -1;
+    }
+    return ret;
+}
+
 /***************************************************************************
  * @endcond
  ***************************************************************************/
+/**
+ * @brief This adds a page to the buffer at the given URL
+ *
+ * @param url      The URL string to look for
+ * @param page     A pointer to the page data
+ * @param page_len The length of the page data
+ * @param type     The mimetype to use
+ *
+ * @return 1 on success, 0 on failure
+ */
+uint8_t
+attoHTTPAddPage(char *url, char *page, uint16_t page_len, mimetypes_t type)
+{
+    uint8_t i;
+    uint8_t ret = 0;
+    for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
+        if (_attoHTTPPages[i].content == NULL) {
+            strncpy(_attoHTTPPages[i].url, url, sizeof(_attoHTTPPages[i].url));
+            _attoHTTPPages[i].content = page;
+            _attoHTTPPages[i].size = page_len;
+            ret = 1;
+            break;
+        }
+    }
+    return ret;
+}
 /**
  * @brief This prints out the OK message
  *
@@ -466,10 +534,26 @@ attoHTTPSendHeaders()
         attoHTTPOK();
     }
     if (_attoHTTP_headersSent == 0) {
+        chars += attoHTTPprintf("Content-Type: %s\r\n", _mimetypes[_attoHTTP_contenttype]);
         chars += attoHTTPprint("\r\n");
         _attoHTTP_headersSent = 1;
     }
     return chars;
+}
+/**
+ * @brief Initiialized the variables
+ *
+ * @return none
+ */
+void
+attoHTTPInit(void)
+{
+    uint8_t i;
+    for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
+        _attoHTTPPages[i].url[0] = 0;
+        _attoHTTPPages[i].content = NULL;
+        _attoHTTPPages[i].size = 0;
+    }
 }
 
 /**
@@ -483,16 +567,19 @@ attoHTTPSendHeaders()
  * @param write This will be sent as the first argument to the send
  *             data functions.  It could be anything.
  *
- * @return @see returncode_t for details
+ * @return The code that was sent out to the client
+ *
+ * @see returncode_t for details
  */
 returncode_t
 attoHTTPExecute(void *read, void *write)
 {
+    int8_t ret;
     _attoHTTP_read = read;
     _attoHTTP_write = write;
 
     // Init all of the variables.
-    attoHTTPInit();
+    attoHTTPInitRun();
     // Parse the first line
     attoHTTPParseMethod();
 
@@ -503,9 +590,18 @@ attoHTTPExecute(void *read, void *write)
     if (_attoHTTP_returnCode == OK) {
         attoHTTPParseHeaders();
     }
+    if (_attoHTTP_returnCode == OK) {
+        _attoHTTP_returnCode = NOT_FOUND;
+
+        ret = attoHTTPFindPage();
+        if (ret > 0) {
+            _attoHTTP_returnCode = OK;
+        } else if (ret == 0) {
+            // Not found in the find page, so check the RESTful stuff
+        }
+    }
     switch (_attoHTTP_returnCode) {
         case OK:
-            attoHTTPOK();
             break;
         case UNSUPPORTED:
             attoHTTPNotImplemented();
@@ -520,6 +616,7 @@ attoHTTPExecute(void *read, void *write)
             attoHTTPInternalError();
             break;
     }
+
     return _attoHTTP_returnCode;
 
 }
