@@ -55,6 +55,7 @@ typedef enum
     UNSUPPORTED,
     BADREQUEST,
     INTERNAL_ERROR,
+    NOT_FOUND
 } returncode_t;
 
 /**
@@ -99,6 +100,13 @@ typedef enum
 #define ATTOHTTP_MIME_TYPES 3
 
 returncode_t attoHTTPExecute(void *read, void *write);
+uint8_t attoHTTPOK();
+uint8_t attoHTTPAccepted();
+uint8_t attoHTTPBadRequest();
+uint8_t attoHTTPNotFound();
+uint8_t attoHTTPInternalError();
+uint8_t attoHTTPNotImplemented();
+uint8_t attoHTTPSendHeaders();
 
 /**
  * @brief User function to get a byte

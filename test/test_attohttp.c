@@ -82,7 +82,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
         returncode_t ret;
 
         ret = attoHTTPExecute(
-            (void *)"GET /index.html HTTP/1.0\r\n\r\n",
+            (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
             (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");

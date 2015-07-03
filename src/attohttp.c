@@ -66,8 +66,10 @@ uint16_t _attoHTTP_url_len;
 uint16_t _attoHTTP_body_len;
 void *_attoHTTP_read;
 void *_attoHTTP_write;
-uint8_t _headersDone;
-returncode_t _returnCode;
+uint8_t _attoHTTP_headersDone;
+uint8_t _attoHTTP_headersSent;
+uint8_t _attoHTTP_firstlineSent;
+returncode_t _attoHTTP_returnCode;
 mimetypes_t _attoHTTP_accept;
 
 /** This is a map of our mime types */
@@ -91,7 +93,7 @@ static const char *_mimetypes[] = {
  *
  * @return none
  */
-void
+static inline void
 attoHTTPInit(void)
 {
     _attoHTTPMethod = NOTSUPPORTED;
@@ -99,8 +101,10 @@ attoHTTPInit(void)
     _attoHTTP_body = NULL;
     _attoHTTP_url_len = 0;
     _attoHTTP_body_len = 0;
-    _headersDone = 0;
-    _returnCode = OK;
+    _attoHTTP_headersDone = 0;
+    _attoHTTP_headersSent = 0;
+    _attoHTTP_firstlineSent = 0;
+    _attoHTTP_returnCode = OK;
     _attoHTTP_extra_c = -1;
 }
 
@@ -169,9 +173,9 @@ attoHTTPParseEOL(void)
     } while (isspace(c) && (ret != 0));
     _attoHTTPPushC(c);
     if (eolCount > 1) {
-        _headersDone = 1;
+        _attoHTTP_headersDone = 1;
     } else if (eolCount == 0) {
-        _returnCode = BADREQUEST;
+        _attoHTTP_returnCode = BADREQUEST;
     }
     return ret;
 }
@@ -212,7 +216,7 @@ attoHTTPParseMethod()
         } else if (strncmp(HTTP_METHOD_PATCH, buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = PATCH;
         } else {
-            _returnCode = UNSUPPORTED;
+            _attoHTTP_returnCode = UNSUPPORTED;
         }
     }
     return ret;
@@ -334,7 +338,7 @@ attoHTTPParseHeaders()
     char name[ATTOHTTP_HEADER_NAME_SIZE];
     char value[ATTOHTTP_HEADER_VALUE_SIZE];
 
-    while ((_headersDone == 0) && (ret != 0)) {
+    while ((_attoHTTP_headersDone == 0) && (ret != 0)) {
         ret = attoHTTPParseHeader(name, sizeof(name), value, sizeof(value));
         if (strncasecmp(name, "accept", sizeof(name)) == 0) {
             for (i = 0; i < ATTOHTTP_MIME_TYPES; i++) {
@@ -372,6 +376,19 @@ attoHTTPprint(const char *buffer)
 {
     return attoHTTPwrite(buffer, strlen(buffer));
 }
+uint16_t
+attoHTTPFirstLine(const char *buffer)
+{
+    uint16_t chars = 0;
+    if (_attoHTTP_firstlineSent == 0) {
+        _attoHTTP_firstlineSent = 1;
+        chars += attoHTTPprint(buffer);
+    }
+    return chars;
+}
+/***************************************************************************
+ * @endcond
+ ***************************************************************************/
 /**
  * @brief This prints out the OK message
  *
@@ -380,27 +397,58 @@ attoHTTPprint(const char *buffer)
 uint8_t
 attoHTTPOK()
 {
-    return attoHTTPprint(HTTP_VERSION " 200 OK\r\n");
+    return attoHTTPFirstLine(HTTP_VERSION " 200 OK\r\n");
+
 }
 /**
- * @brief This prints out the OK message
+ * @brief This prints out the Accepted message
+ *
+ * @return The number of characters printed
+ */
+uint8_t
+attoHTTPAccepted()
+{
+    return attoHTTPFirstLine(HTTP_VERSION " 202 Accepted\r\n");
+}
+/**
+ * @brief This prints out the Bad Request Message
  *
  * @return The number of characters printed
  */
 uint8_t
 attoHTTPBadRequest()
 {
-    return attoHTTPprint(HTTP_VERSION " 400 Bad Request\r\n");
+    return attoHTTPFirstLine(HTTP_VERSION " 400 Bad Request\r\n");
 }
 /**
- * @brief This prints out the OK message
+ * @brief This prints out the Not Found Message
+ *
+ * @return The number of characters printed
+ */
+uint8_t
+attoHTTPNotFound()
+{
+    return attoHTTPFirstLine(HTTP_VERSION " 404 Not Found\r\n");
+}
+/**
+ * @brief This prints out the Internal Error message
  *
  * @return The number of characters printed
  */
 uint8_t
 attoHTTPInternalError()
 {
-    return attoHTTPprint(HTTP_VERSION " 500 Internal Error\r\n");
+    return attoHTTPFirstLine(HTTP_VERSION " 500 Internal Error\r\n");
+}
+/**
+ * @brief This prints out the Not Impelemented message
+ *
+ * @return The number of characters printed
+ */
+uint8_t
+attoHTTPNotImplemented()
+{
+    return attoHTTPFirstLine(HTTP_VERSION " 501 Not Implemented\r\n");
 }
 /**
  * @brief This prints out the OK message
@@ -408,13 +456,18 @@ attoHTTPInternalError()
  * @return The number of characters printed
  */
 uint8_t
-attoHTTPNotImplemented()
+attoHTTPSendHeaders()
 {
-    return attoHTTPprint(HTTP_VERSION " 501 Not Implemented\r\n");
+    uint16_t chars = 0;
+    if (_attoHTTP_firstlineSent == 0) {
+        attoHTTPOK();
+    }
+    if (_attoHTTP_headersSent == 0) {
+        chars += attoHTTPprint("\r\n");
+        _attoHTTP_headersSent = 1;
+    }
+    return chars;
 }
-/***************************************************************************
- * @endcond
- ***************************************************************************/
 
 /**
  * @brief Main function that runs everything
@@ -440,16 +493,22 @@ attoHTTPExecute(void *read, void *write)
     // Parse the first line
     attoHTTPParseMethod();
 
-    if (_returnCode == OK) {
+    if (_attoHTTP_returnCode == OK) {
         attoHTTPParseURI();
         attoHTTPParseVersion();
     }
-    switch (_returnCode) {
+    if (_attoHTTP_returnCode == OK) {
+        attoHTTPParseHeaders();
+    }
+    switch (_attoHTTP_returnCode) {
         case OK:
             attoHTTPOK();
             break;
         case UNSUPPORTED:
             attoHTTPNotImplemented();
+            break;
+        case NOT_FOUND:
+            attoHTTPNotFound();
             break;
         case BADREQUEST:
             attoHTTPBadRequest();
@@ -458,6 +517,6 @@ attoHTTPExecute(void *read, void *write)
             attoHTTPInternalError();
             break;
     }
-    return _returnCode;
+    return _attoHTTP_returnCode;
 
 }
