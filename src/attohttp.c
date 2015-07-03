@@ -427,7 +427,7 @@ attoHTTPFindPage(void)
             }
         }
     } else {
-        _attoHTTP_returnCode = NOTSUPPORTED;
+        _attoHTTP_returnCode = UNSUPPORTED;
         ret = -1;
     }
     return ret;

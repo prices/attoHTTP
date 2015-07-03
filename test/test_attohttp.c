@@ -38,6 +38,9 @@ static const char default_content[] = "Default";
 static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 1024
+#define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
+#define CheckDefault(ret) fct_xchk((ret == OK), "Return was not 'OK'"); fct_chk_eq_str(default_return, write_buffer)
+
 
 char write_buffer[WRITE_BUFFER_SIZE];
 
@@ -73,8 +76,82 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
             (void *)"BADMETHOD /index.html HTTP/1.0\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'");
-        fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer);
+        CheckUnsupported(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETPage) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testPUTPage) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"PUT /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckUnsupported(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testPOSTPage) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"POST /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckUnsupported(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testDELETEPage) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"DELETE /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckUnsupported(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testPATCHPage) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"PATCH /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckUnsupported(ret);
     }
     FCT_TEST_END()
     /**
@@ -89,24 +166,67 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
             (void *)"GET         /index.html HTTP/1.0\r\n\r\n",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
-        fct_chk_eq_str(default_return, write_buffer);
+        CheckDefault(ret);
     }
     FCT_TEST_END()
     /**
-    * @brief This tests the empty queue functions
-    *
-    * @return void
-    */
-    FCT_TEST_BGN(testGET_001) {
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testURLExtraSpaces) {
         returncode_t ret;
         attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
         ret = attoHTTPExecute(
-            (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
-            (void *)write_buffer
+            (void *)"GET /index.html          HTTP/1.0\r\n\r\n",
+                              (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
-        fct_chk_eq_str(default_return, write_buffer);
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testHTTP1.1) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.1\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testHTTP0.9) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/0.9\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETPageURLParams) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html?test=1&hello=2 HTTP/1.0\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
     }
     FCT_TEST_END()
 }
