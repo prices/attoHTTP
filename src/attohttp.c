@@ -243,6 +243,7 @@ int8_t
 attoHTTPParseURI()
 {
     uint8_t ret;
+    char c;
     // Remove any extra space
     ret = attoHTTPParseSpace();
 
@@ -260,8 +261,15 @@ attoHTTPParseURI()
                 _attoHTTP_url_len++;
             }
         } while (ret && (_attoHTTP_url_len < (sizeof(_attoHTTP_url) - 1)));
-        _attoHTTPPushC(_attoHTTP_url[_attoHTTP_url_len]);
+        // Remove any extra that doesn't fit into our buffer
+        // We are not done with the URL
+        c = _attoHTTP_url[_attoHTTP_url_len];
+        while (ret && !isblank(c)) {
+            ret = attoHTTPReadC(&c);
+        }
+        _attoHTTPPushC(c);
         _attoHTTP_url[_attoHTTP_url_len] = 0;
+
     }
     return ret;
 
@@ -453,9 +461,10 @@ attoHTTPAddPage(char *url, char *page, uint16_t page_len, mimetypes_t type)
     uint8_t ret = 0;
     for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
         if (_attoHTTPPages[i].content == NULL) {
-            strncpy(_attoHTTPPages[i].url, url, sizeof(_attoHTTPPages[i].url));
+            // Page and page_len should get set first for testing reasons
             _attoHTTPPages[i].content = page;
             _attoHTTPPages[i].size = page_len;
+            strncpy(_attoHTTPPages[i].url, url, sizeof(_attoHTTPPages[i].url));
             ret = 1;
             break;
         }

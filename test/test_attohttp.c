@@ -189,6 +189,21 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
      *
      * @return void
      */
+    FCT_TEST_BGN(testVersionExtraSpaces) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.0    \r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
     FCT_TEST_BGN(testHTTP1.1) {
         returncode_t ret;
         attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
@@ -224,6 +239,36 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
         attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
         ret = attoHTTPExecute(
             (void *)"GET /index.html?test=1&hello=2 HTTP/1.0\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testAddPageBufferOverrun) {
+        returncode_t ret;
+        attoHTTPAddPage("012345678901234567890123456789012345679801234567890123456789", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET 0123456789012345678901234567890123456789 HTTP/1.0    \r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETPageURLBufferOverrun) {
+        returncode_t ret;
+        attoHTTPAddPage("012345678901234567890123456789012345679801234567890123456789", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET 01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789 HTTP/1.0\r\n\r\n",
                               (void *)write_buffer
         );
         CheckDefault(ret);
