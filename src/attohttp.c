@@ -293,7 +293,6 @@ int8_t
 attoHTTPParseHeader(char *name, uint16_t namesize, char *value, uint16_t valuesize)
 {
     uint8_t ret;
-    char c;
     do {
         ret = attoHTTPReadC(name);
         if (*name == ':') {
@@ -305,10 +304,7 @@ attoHTTPParseHeader(char *name, uint16_t namesize, char *value, uint16_t valuesi
     } while ((ret > 0) && (namesize > 0));
     *name = 0; // Terminate the string
 
-    do {
-        ret = attoHTTPReadC(&c);
-    } while ((ret > 0) && isspace(c));
-    _attoHTTPPushC(c);
+    ret = attoHTTPParseSpace();
 
     do {
         ret = attoHTTPReadC(value);
@@ -320,7 +316,6 @@ attoHTTPParseHeader(char *name, uint16_t namesize, char *value, uint16_t valuesi
         }
     } while ((ret > 0) && (valuesize > 0));
     _attoHTTPPushC(*value);
-
     *value = 0;  // Terminate the string
 
     ret = attoHTTPParseEOL();
