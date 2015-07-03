@@ -127,7 +127,7 @@ uint8_t attoHTTPNotImplemented();
 uint8_t attoHTTPSendHeaders();
 void attoHTTPInit(void);
 uint8_t attoHTTPAddPage(char *url, char *page, uint16_t page_len, mimetypes_t type);
-
+uint8_t attoHTTPDefaultPage(char *url, char *page, uint16_t page_len, mimetypes_t type);
 /**
  * @brief User function to get a byte
  *

@@ -54,7 +54,10 @@
 #endif
 
 
+#define _attoHTTPCheckPage(page)  (!_attoHTTPPageEmpty(page) && (0 == strncmp(_attoHTTP_url, page.url, sizeof(page.url))))
+#define _attoHTTPDefaultPage() (!_attoHTTPPageEmpty(_attoHTTPDefaultPage) && (strncmp(_attoHTTP_url, "/", sizeof(_attoHTTP_url)) == 0) && (_attoHTTP_url_len == 1))
 #define _attoHTTPPushC(char) _attoHTTP_extra_c = char
+#define _attoHTTPPageEmpty(page) (page.content == NULL)
 
 /***************************************************************************
  *                              Private Parameters
@@ -78,6 +81,7 @@ mimetypes_t _attoHTTP_accept;
 mimetypes_t _attoHTTP_contenttype;
 uint32_t _attoHTTP_contentlength;
 attoHTTPPage _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
+attoHTTPPage _attoHTTPDefaultPage;
 
 /** This is a map of our mime types */
 static const char *_mimetypes[] = {
@@ -423,16 +427,24 @@ attoHTTPFindPage(void)
 {
     int8_t ret = 0;
     uint8_t i;
+    attoHTTPPage *page = NULL;
     if (_attoHTTPMethod == GET) {
-        for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
-            if (0 == strncmp(_attoHTTP_url, _attoHTTPPages[i].url, sizeof(_attoHTTPPages[i].url))) {
-                _attoHTTP_contenttype = _attoHTTPPages[i].type;
-                _attoHTTP_contentlength = _attoHTTPPages[i].size;
-                attoHTTPSendHeaders();
-                attoHTTPwrite(_attoHTTPPages[i].content, _attoHTTPPages[i].size);
-                ret = 1;
-                break;
+        if (_attoHTTPDefaultPage() || _attoHTTPCheckPage(_attoHTTPDefaultPage)) {
+            page = &_attoHTTPDefaultPage;
+        } else {
+            for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
+                if (_attoHTTPCheckPage(_attoHTTPPages[i])) {
+                    page = &_attoHTTPPages[i];
+                    break;
+                }
             }
+        }
+        if (page != NULL) {
+            _attoHTTP_contenttype = page->type;
+            _attoHTTP_contentlength = page->size;
+            attoHTTPSendHeaders();
+            attoHTTPwrite(page->content, page->size);
+            ret = 1;
         }
     } else {
         _attoHTTP_returnCode = UNSUPPORTED;
@@ -455,15 +467,40 @@ attoHTTPFindPage(void)
  * @return 1 on success, 0 on failure
  */
 uint8_t
+attoHTTPDefaultPage(char *url, char *page, uint16_t page_len, mimetypes_t type)
+{
+    uint8_t ret = 0;
+    if (_attoHTTPPageEmpty(_attoHTTPDefaultPage)) {
+        // Page and page_len should get set first for testing reasons
+        _attoHTTPDefaultPage.content = page;
+        _attoHTTPDefaultPage.size = page_len;
+        _attoHTTPDefaultPage.type = type;
+        strncpy(_attoHTTPDefaultPage.url, url, sizeof(_attoHTTPDefaultPage.url));
+        ret = 1;
+    }
+    return ret;
+}
+/**
+ * @brief This adds the default page to the buffer at the given URL
+ *
+ * @param url      The URL string to look for
+ * @param page     A pointer to the page data
+ * @param page_len The length of the page data
+ * @param type     The mimetype to use
+ *
+ * @return 1 on success, 0 on failure
+ */
+uint8_t
 attoHTTPAddPage(char *url, char *page, uint16_t page_len, mimetypes_t type)
 {
     uint8_t i;
     uint8_t ret = 0;
     for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
-        if (_attoHTTPPages[i].content == NULL) {
+        if (_attoHTTPPageEmpty(_attoHTTPPages[i])) {
             // Page and page_len should get set first for testing reasons
             _attoHTTPPages[i].content = page;
             _attoHTTPPages[i].size = page_len;
+            _attoHTTPPages[i].type = type;
             strncpy(_attoHTTPPages[i].url, url, sizeof(_attoHTTPPages[i].url));
             ret = 1;
             break;
@@ -563,10 +600,15 @@ void
 attoHTTPInit(void)
 {
     uint8_t i;
+    _attoHTTPDefaultPage.url[0] = 0;
+    _attoHTTPDefaultPage.content = NULL;
+    _attoHTTPDefaultPage.size = 0;
+    _attoHTTPDefaultPage.type = TEXT_HTML;
     for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
         _attoHTTPPages[i].url[0] = 0;
         _attoHTTPPages[i].content = NULL;
         _attoHTTPPages[i].size = 0;
+        _attoHTTPPages[i].type = TEXT_HTML;
     }
 }
 
