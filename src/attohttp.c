@@ -33,6 +33,7 @@
 #include <stdarg.h>
 #include <inttypes.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 #include "attohttp.h"
 
@@ -42,7 +43,15 @@
 #ifndef ATTOHTTP_URL_BUFFER_SIZE
 # define ATTOHTTP_URL_BUFFER_SIZE 64
 #endif
+#ifndef ATTOHTTP_HEADER_NAME_SIZE
+# define ATTOHTTP_HEADER_NAME_SIZE 32
+#endif
+#ifndef ATTOHTTP_HEADER_VALUE_SIZE
+# define ATTOHTTP_HEADER_VALUE_SIZE 64
+#endif
 
+
+#define _attoHTTPPushC(char) _attoHTTP_extra_c = char
 
 /***************************************************************************
  *                              Private Parameters
@@ -51,6 +60,7 @@
 httpmethod_t _attoHTTPMethod;
 httpversion_t _attoHTTPVersion;
 char _attoHTTP_url[ATTOHTTP_URL_BUFFER_SIZE];
+char _attoHTTP_extra_c;
 char *_attoHTTP_body;
 uint16_t _attoHTTP_url_len;
 uint16_t _attoHTTP_body_len;
@@ -58,6 +68,14 @@ void *_attoHTTP_read;
 void *_attoHTTP_write;
 uint8_t _headersDone;
 returncode_t _returnCode;
+mimetypes_t _attoHTTP_accept;
+
+/** This is a map of our mime types */
+static const char *_mimetypes[] = {
+    [application_json] = "application/json",
+    [text_html] = "text/html",
+    [text_plain] = "text/plain",
+};
 
 /***************************************************************************
  * @endcond
@@ -83,30 +101,79 @@ attoHTTPInit(void)
     _attoHTTP_body_len = 0;
     _headersDone = 0;
     _returnCode = OK;
+    _attoHTTP_extra_c = -1;
 }
+
 /**
- * @brief Finds the method, url, and HTTP version
+ * @brief Finds one or more EOL
  *
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
-attoHTTPParseEOL(char c)
+attoHTTPReadC(char *c)
+{
+    int8_t ret = 1;
+    if (_attoHTTP_extra_c > 0) {
+        *c = _attoHTTP_extra_c;
+        _attoHTTP_extra_c = -1;
+    } else if (_attoHTTP_extra_c == 0) {
+        *c = 0;
+    } else {
+        ret = attoHTTPGetByte(_attoHTTP_read, c);
+    }
+    return ret;
+}
+/**
+ * @brief Finds one or more EOL
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+static inline int8_t
+attoHTTPWriteC(char c)
+{
+    return attoHTTPSetByte(_attoHTTP_write, c);
+}
+/**
+ * @brief Finds one or more EOL
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+int8_t
+attoHTTPParseSpace(void)
+{
+    int8_t ret;
+    char c;
+    do {
+        ret = attoHTTPReadC(&c);
+    } while (isblank(c) && (ret != 0));
+    _attoHTTPPushC(c);
+    return ret;
+}
+/**
+ * @brief Finds one or more EOL
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+int8_t
+attoHTTPParseEOL(void)
 {
     uint8_t ret = 1;
+    char c;
     int8_t eolCount = 0;
     // Remove any extra space
-    while (isspace(c) && (ret != 0)) {
+    do {
+        ret = attoHTTPReadC(&c);
         if (c == '\n') {
             eolCount++;
         }
-        ret = attoHTTPGetByte(_attoHTTP_read, &c);
-    }
+    } while (isspace(c) && (ret != 0));
+    _attoHTTPPushC(c);
     if (eolCount > 1) {
         _headersDone = 1;
     } else if (eolCount == 0) {
         _returnCode = BADREQUEST;
     }
-    return eolCount;
+    return ret;
 }
 /**
  * @brief Finds the method, url, and HTTP version
@@ -117,23 +184,23 @@ int8_t
 attoHTTPParseMethod()
 {
     uint8_t ret;
-    char c;
     char buffer[10];
     uint16_t ptr;
     // Remove any extra space
-    do {
-        ret = attoHTTPGetByte(_attoHTTP_read, &c);
-    } while (isblank(c) && ret);
+    ret = attoHTTPParseSpace();
 
     if (ret) {
         ptr = 0;
         do {
-            buffer[ptr++] = c;
-            ret = attoHTTPGetByte(_attoHTTP_read, &c);
-        } while (!isblank(c) && ret && (ptr < 9));
+            ret = attoHTTPReadC(&buffer[ptr]);
+            if (isblank(buffer[ptr])) {
+                break;
+            } else {
+                ptr++;
+            }
+        } while (ret && (ptr < (sizeof(buffer) - 1)));
         buffer[ptr] = 0;
 
-        // Get rid of any white space
         if (strncmp(HTTP_METHOD_GET, buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = GET;
         } else if (strncmp(HTTP_METHOD_POST, buffer, sizeof(buffer)) == 0) {
@@ -160,19 +227,20 @@ int8_t
 attoHTTPParseURI()
 {
     uint8_t ret;
-    char c;
     // Remove any extra space
-    do {
-        ret = attoHTTPGetByte(_attoHTTP_read, &c);
-    } while (isblank(c) && (ret != 0));
+    ret = attoHTTPParseSpace();
 
     if (ret) {
         _attoHTTP_url_len = 0;
         do {
-            _attoHTTP_url[_attoHTTP_url_len++] = c;
-            ret = attoHTTPGetByte(_attoHTTP_read, &c);
-
-        } while (!isblank(c) && ret && (_attoHTTP_url_len < (sizeof(_attoHTTP_url) - 1)));
+            ret = attoHTTPReadC(&_attoHTTP_url[_attoHTTP_url_len]);
+            if (isblank(_attoHTTP_url[_attoHTTP_url_len])) {
+                break;
+            } else {
+                _attoHTTP_url_len++;
+            }
+        } while (ret && (_attoHTTP_url_len < (sizeof(_attoHTTP_url) - 1)));
+        _attoHTTPPushC(_attoHTTP_url[_attoHTTP_url_len]);
         _attoHTTP_url[_attoHTTP_url_len] = 0;
     }
     return ret;
@@ -187,31 +255,75 @@ int8_t
 attoHTTPParseVersion()
 {
     uint8_t ret;
-    char c;
     char buffer[10];
     uint16_t ptr;
     // Remove any extra space
-    do {
-        ret = attoHTTPGetByte(_attoHTTP_read, &c);
-    } while (isblank(c) && (ret != 0));
+    ret = attoHTTPParseSpace();
 
     if (ret) {
         ptr = 0;
         do {
-            buffer[ptr++] = c;
-            ret = attoHTTPGetByte(_attoHTTP_read, &c);
-        } while (!isspace(c) && ret && (ptr < (sizeof(buffer) - 1)));
+            ret = attoHTTPReadC(&buffer[ptr]);
+            if (isspace(buffer[ptr])) {
+                break;
+            } else {
+                ptr++;
+            }
+        } while (ret && (ptr < (sizeof(buffer) - 1)));
+        _attoHTTPPushC(buffer[ptr]);
         buffer[ptr] = 0;
         _attoHTTPVersion = VUNKNOWN;
-
         if (strncmp(HTTP_VERSION_1_0, buffer, ptr) == 0) {
             _attoHTTPVersion = V1_0;
         } else if (strncmp(HTTP_VERSION_1_1, buffer, ptr) == 0) {
             _attoHTTPVersion = V1_1;
         }
     }
-    ret = attoHTTPParseEOL(c);
 
+    ret = attoHTTPParseEOL();
+
+    return ret;
+}
+/**
+ * @brief Finds the method, url, and HTTP version
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+int8_t
+attoHTTPParseHeader(char *name, uint16_t namesize, char *value, uint16_t valuesize)
+{
+    uint8_t ret;
+    char c;
+    do {
+        ret = attoHTTPReadC(name);
+        if (*name == ':') {
+            break;
+        } else {
+            name++;
+            namesize--;
+        }
+    } while ((ret > 0) && (namesize > 0));
+    *name = 0; // Terminate the string
+
+    do {
+        ret = attoHTTPReadC(&c);
+    } while ((ret > 0) && isspace(c));
+    _attoHTTPPushC(c);
+
+    do {
+        ret = attoHTTPReadC(value);
+        if ((*value == '\r') || (*value == '\n')) {
+            break;
+        } else {
+            value++;
+            valuesize--;
+        }
+    } while ((ret > 0) && (valuesize > 0));
+    _attoHTTPPushC(*value);
+
+    *value = 0;  // Terminate the string
+
+    ret = attoHTTPParseEOL();
     return ret;
 }
 /**
@@ -223,8 +335,19 @@ int8_t
 attoHTTPParseHeaders()
 {
     int8_t ret = 1;
-    if (_headersDone == 0) {
+    uint8_t i;
+    char name[ATTOHTTP_HEADER_NAME_SIZE];
+    char value[ATTOHTTP_HEADER_VALUE_SIZE];
 
+    while ((_headersDone == 0) && (ret != 0)) {
+        ret = attoHTTPParseHeader(name, sizeof(name), value, sizeof(value));
+        if (strncasecmp(name, "accept", sizeof(name)) == 0) {
+            for (i = 0; i < ATTOHTTP_MIME_TYPES; i++) {
+                if (strncasecmp(value, _mimetypes[i], sizeof(value)) == 0) {
+                    _attoHTTP_accept = i;
+                }
+            }
+        }
     }
     return ret;
 }
@@ -233,7 +356,7 @@ attoHTTPwrite(const char *buffer, uint16_t len)
 {
     uint16_t ret = 0;
     while (len-- > 0) {
-        ret += attoHTTPSetByte(_attoHTTP_write, *buffer++);
+        ret += attoHTTPWriteC(*buffer++);
     }
     return ret;
 }

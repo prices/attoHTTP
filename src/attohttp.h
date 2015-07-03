@@ -84,6 +84,19 @@ typedef enum
     V1_1
 } httpversion_t;
 
+/**
+ * @brief The version of HTTP
+ *
+ * These represent the version of HTTP that the client is using.
+ */
+typedef enum
+{
+    application_json = 0,
+    text_html = 1,
+    text_plain = 2
+} mimetypes_t;
+
+#define ATTOHTTP_MIME_TYPES 3
 
 returncode_t attoHTTPExecute(void *read, void *write);
 
