@@ -447,15 +447,18 @@ attoHTTPFindAPICallback(void)
                     command[cmdlvl] = url_ptr + 1;
                     cmdlvl++;
                 } else if ((cmdlvl > idlvl) && (idlvl < ATTOHTTP_API_LEVELS)) {
-                    id[idlvl] = url_ptr + 1;
-                    idlvl++;
+                    // Don't get a level if there is nothing after the slash.
+                    if (ctr > 1) {
+                        id[idlvl] = url_ptr + 1;
+                        idlvl++;
+                    }
                 }
                 *url_ptr = 0;
             }
             url_ptr++;
             ctr--;
         }
-        ret = Callback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
+        _attoHTTP_returnCode = Callback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
     }
     return ret;
 }

@@ -149,7 +149,7 @@ typedef enum
 } mimetypes_t;
 #define ATTOHTTP_MIME_TYPES 5
 
-typedef int8_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl);
+typedef returncode_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl);
 
 /**
  * @brief This keeps track of our pages

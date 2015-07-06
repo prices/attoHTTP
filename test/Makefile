@@ -1,7 +1,7 @@
 
 BASEDIR:=../
 
-TEST_OBJECTS:=test.o attohttp.o test_attohttp.o
+TEST_OBJECTS:=test.o attohttp.o test_attohttp.o test_attohttpAPI.o
 
 HEADER_FILES:=test.h
 TEST_TARGET:=attohttp
