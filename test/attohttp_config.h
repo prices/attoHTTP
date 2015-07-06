@@ -40,5 +40,34 @@
  */
 #undef ATTOHTTP_PRINTF_BUFFER_SIZE
 
+/**
+ * @brief User function to get a byte
+ *
+ * This function must be defined by the user.  It will allow this software to
+ * get bytes from any source.
+ *
+ * @param read This is whatever it needs to be.  Could be a socket, or an object,
+ *              or something totally different.  It will be called with whatever
+ *              extra argument was given to the execute routine.
+ * @param byte  A pointer to the byte we need to put the next character in.
+ *
+ * @return 1 if a character was read, 0 otherwise.
+ */
+uint16_t attoHTTPGetByte(void *read, char *byte);
+/**
+ * @brief User function to set a byte
+ *
+ * This function must be defined by the user.  It will allow this software to
+ * set bytes to any destination.
+ *
+ * @param write This is whatever it needs to be.  Could be a socket, or an object,
+ *              or something totally different.  It will be called with whatever
+ *              extra argument was given to the execute routine.
+ * @param byte  A pointer to the byte we need to put the next character in.
+ *
+ * @return 1 if a character was read, 0 otherwise.
+ */
+uint16_t attoHTTPSetByte(void *write, char byte);
+
 
 #endif // #ifndef __ATTOHTTP_CONFIG_H__

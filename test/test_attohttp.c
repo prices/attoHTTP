@@ -55,7 +55,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
     FCT_SETUP_BGN() {
         TestInit();
         memset(write_buffer, 0, WRITE_BUFFER_SIZE);
-        attoHTTPInit();
+        attoHTTPInit(0);
     }
     FCT_SETUP_END();
     /**
@@ -370,6 +370,21 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
      *
      * @return void
      */
+    FCT_TEST_BGN(testHTTP1.1GETPage) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.0\r\nHost: localhost:8000",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
     FCT_TEST_BGN(testGETDefaultPageNoPages) {
         returncode_t ret;
         ret = attoHTTPExecute(
@@ -379,5 +394,21 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
         CheckNotFound(ret);
     }
     FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testHTTPGetFirefox) {
+        returncode_t ret;
+        attoHTTPDefaultPage("/index.html", (char *)default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET / HTTP/1.1\r\nHost: localhost:8000\r\nUser-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\nConnection: keep-alive",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+
 }
 FCTMF_FIXTURE_SUITE_END();

@@ -43,6 +43,11 @@
 
 #define HTTP_VERSION HTTP_VERSION_1_0
 
+
+/** This flag tells attoHTTP that all pages are gzipped */
+#define ATTOHTTP_FLAG_GZIP (1<<0)
+
+
 #ifndef ATTOHTTP_PAGE_URL_SIZE
 #  define ATTOHTTP_PAGE_URL_SIZE 32
 #endif
@@ -99,7 +104,10 @@ typedef enum
 {
     APPLICATION_JSON = 0,
     TEXT_HTML = 1,
-    TEXT_PLAIN = 2
+    TEXT_PLAIN = 2,
+    TEXT_CSS = 3,
+    APPLICATION_JAVASCRIPT = 4
+
 } mimetypes_t;
 #define ATTOHTTP_MIME_TYPES 3
 
@@ -111,7 +119,7 @@ typedef enum
  */
 typedef struct {
     char url[ATTOHTTP_PAGE_URL_SIZE];
-    char *content;
+    const char *content;
     uint16_t size;
     mimetypes_t type;
 } attoHTTPPage;
@@ -125,9 +133,9 @@ uint8_t attoHTTPNotFound();
 uint8_t attoHTTPInternalError();
 uint8_t attoHTTPNotImplemented();
 uint8_t attoHTTPSendHeaders();
-void attoHTTPInit(void);
-uint8_t attoHTTPAddPage(char *url, char *page, uint16_t page_len, mimetypes_t type);
-uint8_t attoHTTPDefaultPage(char *url, char *page, uint16_t page_len, mimetypes_t type);
+void attoHTTPInit(uint16_t flags);
+uint8_t attoHTTPAddPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type);
+uint8_t attoHTTPDefaultPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type);
 /**
  * @brief User function to get a byte
  *
@@ -141,7 +149,7 @@ uint8_t attoHTTPDefaultPage(char *url, char *page, uint16_t page_len, mimetypes_
  *
  * @return 1 if a character was read, 0 otherwise.
  */
-uint16_t attoHTTPGetByte(void *read, char *byte);
+//uint16_t attoHTTPGetByte(void *read, char *byte);
 /**
  * @brief User function to set a byte
  *
@@ -155,7 +163,8 @@ uint16_t attoHTTPGetByte(void *read, char *byte);
  *
  * @return 1 if a character was read, 0 otherwise.
  */
-uint16_t attoHTTPSetByte(void *write, char byte);
+//uint16_t attoHTTPSetByte(void *write, char byte);
 
 
+#define __ATTOHTTP_H_DONE__
 #endif // #ifndef __ATTOHTTP_H__

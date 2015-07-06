@@ -82,12 +82,15 @@ mimetypes_t _attoHTTP_contenttype;
 uint32_t _attoHTTP_contentlength;
 attoHTTPPage _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
 attoHTTPPage _attoHTTPDefaultPage;
+uint16_t _attoHTTP_flags;
 
 /** This is a map of our mime types */
 static const char *_mimetypes[] = {
     [APPLICATION_JSON] = "application/json",
     [TEXT_HTML] = "text/html",
     [TEXT_PLAIN] = "text/plain",
+    [TEXT_CSS] = "text/css",
+    [APPLICATION_JAVASCRIPT] = "application/javascript"
 };
 
 /***************************************************************************
@@ -138,6 +141,7 @@ attoHTTPReadC(char *c)
         _attoHTTP_extra_c = -1;
     } else if (_attoHTTP_extra_c == 0) {
         *c = 0;
+        ret = 0;
     } else {
         ret = attoHTTPGetByte(_attoHTTP_read, c);
     }
@@ -170,7 +174,10 @@ attoHTTPParseSpace(void)
     return ret;
 }
 /**
- * @brief Finds one or more EOL
+ * @brief Finds one or two EOL
+ *
+ * This will remove any character from the stream until it hits an EOL, then
+ * it will only take space characters.
  *
  * @return 1 if there is more to read, 0 if done reading
  */
@@ -186,12 +193,10 @@ attoHTTPParseEOL(void)
         if (c == '\n') {
             eolCount++;
         }
-    } while (isspace(c) && (ret != 0));
+    } while ((isspace(c) || (eolCount == 0)) && (ret != 0) && (eolCount < 2));
     _attoHTTPPushC(c);
     if (eolCount > 1) {
         _attoHTTP_headersDone = 1;
-    } else if (eolCount == 0) {
-        _attoHTTP_returnCode = BADREQUEST;
     }
     return ret;
 }
@@ -325,6 +330,7 @@ int8_t
 attoHTTPParseHeader(char *name, uint16_t namesize, char *value, uint16_t valuesize)
 {
     uint8_t ret;
+    namesize--; // Account for the termination character
     do {
         ret = attoHTTPReadC(name);
         if (*name == ':') {
@@ -338,6 +344,7 @@ attoHTTPParseHeader(char *name, uint16_t namesize, char *value, uint16_t valuesi
 
     ret = attoHTTPParseSpace();
 
+    valuesize--; // Account for the termination character
     do {
         ret = attoHTTPReadC(value);
         if ((*value == '\r') || (*value == '\n')) {
@@ -347,9 +354,10 @@ attoHTTPParseHeader(char *name, uint16_t namesize, char *value, uint16_t valuesi
             valuesize--;
         }
     } while ((ret > 0) && (valuesize > 0));
-    _attoHTTPPushC(*value);
+    if (valuesize > 0) {
+        _attoHTTPPushC(*value);
+    }
     *value = 0;  // Terminate the string
-
     ret = attoHTTPParseEOL();
     return ret;
 }
@@ -386,7 +394,7 @@ attoHTTPwrite(const char *buffer, uint16_t len)
     while (len-- > 0) {
         c = *buffer++;
         // This makes sure that what we are sending out is UTF-8 compatible.
-        ret += attoHTTPWriteC(c & 0x7F);
+        ret += attoHTTPWriteC(c);
     }
     return ret;
 }
@@ -467,7 +475,7 @@ attoHTTPFindPage(void)
  * @return 1 on success, 0 on failure
  */
 uint8_t
-attoHTTPDefaultPage(char *url, char *page, uint16_t page_len, mimetypes_t type)
+attoHTTPDefaultPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type)
 {
     uint8_t ret = 0;
     if (_attoHTTPPageEmpty(_attoHTTPDefaultPage)) {
@@ -491,7 +499,7 @@ attoHTTPDefaultPage(char *url, char *page, uint16_t page_len, mimetypes_t type)
  * @return 1 on success, 0 on failure
  */
 uint8_t
-attoHTTPAddPage(char *url, char *page, uint16_t page_len, mimetypes_t type)
+attoHTTPAddPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type)
 {
     uint8_t i;
     uint8_t ret = 0;
@@ -586,6 +594,9 @@ attoHTTPSendHeaders()
         if (_attoHTTP_contentlength > 0) {
             chars += attoHTTPprintf("Content-Length: %d\r\n", _attoHTTP_contentlength);
         }
+        if (_attoHTTP_flags & ATTOHTTP_FLAG_GZIP) {
+            chars += attoHTTPprint("Content-Encoding: gzip\r\n");
+        }
         chars += attoHTTPprint("\r\n");
         _attoHTTP_headersSent = 1;
     }
@@ -597,9 +608,10 @@ attoHTTPSendHeaders()
  * @return none
  */
 void
-attoHTTPInit(void)
+attoHTTPInit(uint16_t flags)
 {
     uint8_t i;
+    _attoHTTP_flags = flags;
     _attoHTTPDefaultPage.url[0] = 0;
     _attoHTTPDefaultPage.content = NULL;
     _attoHTTPDefaultPage.size = 0;
