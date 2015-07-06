@@ -1,5 +1,5 @@
 /**
- * @file    src/attohttp.h
+ * @file    src/wrapper_unix_sockets.h
  * @author  Scott L. Price <prices@dflytech.com>
  * @note    (C) 2015  Scott L. Price
  * @brief   A small http server for embedded systems
@@ -49,7 +49,7 @@
 #ifdef __ATTOHTTP_H_DONE__
 // Done include this bit until the attohttp.h file has been included
 
-/** @var This is our unix socket */
+/** This is our unix socket */
 int attoHTTPUnixSock;
 
 /**
@@ -62,9 +62,9 @@ int attoHTTPUnixSock;
  * @return None
  */
 static inline void
-attoHTTPWrapperInit(uint16_t port, uint16_t flags)
+attoHTTPWrapperInit(uint16_t port)
 {
-    attoHTTPInit(flags);
+    attoHTTPInit();
     struct sockaddr_in server;
     attoHTTPUnixSock = -1;
     if ((attoHTTPUnixSock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1) {
@@ -175,15 +175,12 @@ attoHTTPGetByte(void *read, char *byte) {
         }
         if ((ret > 0) && FD_ISSET(sock, &active)) {
             ret = recv(sock, byte, 1, 0);
-#ifdef __DEBUG
-            if (ret) {
-                if (*byte < 32) {
-                    printf("(%d)", *byte);
-                } else {
-                    printf("%c", *byte);
-                }
+            #ifdef __DEBUG__
+            if (*byte < 32) {
+                printf("[%d]", *byte);
             }
-#endif
+            printf("%c", *byte);
+            #endif
         }
     }
     return ret;

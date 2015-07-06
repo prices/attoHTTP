@@ -27,6 +27,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/**
+ * @page char_fcts User Defined Character Functions
+ * @section char_fcts_get attoHTTPGetByte
+ * @subsection char_fcts_get_prototype Prototype
+ * @code
+ * uint16_t attoHTTPGetByte(void *read, char *byte);
+ * @endcode
+ *
+ * @subsection char_fcts_get_explain Explaination
+ *
+ * This function must be defined by the user.  It will allow this software to
+ * get bytes from any source.
+ *
+ * @param read This is whatever it needs to be.  Could be a socket, or an object,
+ *              or something totally different.  It will be called with whatever
+ *              extra argument was given to the execute routine.
+ * @param byte  A pointer to the byte we need to put the next character in.
+ *
+ * @return 1 if a character was read, 0 otherwise.
+ *
+ *
+ * @section char_fcts_set attoHTTPSetByte
+ * @subsection char_fcts_set_prototype Prototype
+ * @code
+ * uint16_t attoHTTPSetByte(void *write, char byte);
+ * @endcode
+ *
+ * @subsection char_fcts_set_explain Explaination
+ *
+ * This function must be defined by the user.  It will allow this software to
+ * set bytes to any destination.
+ *
+ * @param write This is whatever it needs to be.  Could be a socket, or an object,
+ *              or something totally different.  It will be called with whatever
+ *              extra argument was given to the execute routine.
+ * @param byte  A pointer to the byte we need to put the next character in.
+ *
+ * @return 1 if a character was read, 0 otherwise.
+ *
+ *
+ */
 #ifndef __ATTOHTTP_H__
 #define __ATTOHTTP_H__
 
@@ -43,9 +84,6 @@
 
 #define HTTP_VERSION HTTP_VERSION_1_0
 
-
-/** This flag tells attoHTTP that all pages are gzipped */
-#define ATTOHTTP_FLAG_GZIP (1<<0)
 
 
 #ifndef ATTOHTTP_PAGE_URL_SIZE
@@ -109,8 +147,9 @@ typedef enum
     APPLICATION_JAVASCRIPT = 4
 
 } mimetypes_t;
-#define ATTOHTTP_MIME_TYPES 3
+#define ATTOHTTP_MIME_TYPES 5
 
+typedef int8_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted, char **command, char **id, uint8_t cmdlvl, uint8_t idlvl);
 
 /**
  * @brief This keeps track of our pages
@@ -122,8 +161,19 @@ typedef struct {
     const char *content;
     uint16_t size;
     mimetypes_t type;
-} attoHTTPPage;
+} attoHTTPPage_t;
 
+/**
+ * @brief This keeps track of our pages
+ *
+ * This struct keeps track of pages and what to load for them.
+ */
+typedef struct _attoHTTPRestAPI {
+    char url[ATTOHTTP_PAGE_URL_SIZE];
+    const char *content;
+    uint16_t size;
+    mimetypes_t type;
+} attoHTTPRestAPI_t;
 
 returncode_t attoHTTPExecute(void *read, void *write);
 uint8_t attoHTTPOK();
@@ -133,37 +183,13 @@ uint8_t attoHTTPNotFound();
 uint8_t attoHTTPInternalError();
 uint8_t attoHTTPNotImplemented();
 uint8_t attoHTTPSendHeaders();
-void attoHTTPInit(uint16_t flags);
+void attoHTTPInit(void);
 uint8_t attoHTTPAddPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type);
 uint8_t attoHTTPDefaultPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type);
-/**
- * @brief User function to get a byte
- *
- * This function must be defined by the user.  It will allow this software to
- * get bytes from any source.
- *
- * @param read This is whatever it needs to be.  Could be a socket, or an object,
- *              or something totally different.  It will be called with whatever
- *              extra argument was given to the execute routine.
- * @param byte  A pointer to the byte we need to put the next character in.
- *
- * @return 1 if a character was read, 0 otherwise.
- */
-//uint16_t attoHTTPGetByte(void *read, char *byte);
-/**
- * @brief User function to set a byte
- *
- * This function must be defined by the user.  It will allow this software to
- * set bytes to any destination.
- *
- * @param write This is whatever it needs to be.  Could be a socket, or an object,
- *              or something totally different.  It will be called with whatever
- *              extra argument was given to the execute routine.
- * @param byte  A pointer to the byte we need to put the next character in.
- *
- * @return 1 if a character was read, 0 otherwise.
- */
-//uint16_t attoHTTPSetByte(void *write, char byte);
+uint16_t attoHTTPwrite(const char *buffer, uint16_t len);
+uint16_t attoHTTPprintf(const char *format, ...);
+uint16_t attoHTTPprint(const char *buffer);
+uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
 
 
 #define __ATTOHTTP_H_DONE__

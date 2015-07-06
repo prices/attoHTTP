@@ -52,6 +52,12 @@
 #ifndef ATTOHTTP_PAGE_BUFFERS
 # define ATTOHTTP_PAGE_BUFFERS 8
 #endif
+#ifndef ATTOHTTP_API_BUFFERS
+# define ATTOHTTP_API_BUFFERS 8
+#endif
+#ifndef ATTOHTTP_API_LEVELS
+# define ATTOHTTP_API_LEVELS 3
+#endif
 
 
 #define _attoHTTPCheckPage(page)  (!_attoHTTPPageEmpty(page) && (0 == strncmp(_attoHTTP_url, page.url, sizeof(page.url))))
@@ -77,12 +83,12 @@ uint8_t _attoHTTP_headersDone;
 uint8_t _attoHTTP_headersSent;
 uint8_t _attoHTTP_firstlineSent;
 returncode_t _attoHTTP_returnCode;
-mimetypes_t _attoHTTP_accept;
+uint16_t _attoHTTP_accept;
 mimetypes_t _attoHTTP_contenttype;
 uint32_t _attoHTTP_contentlength;
-attoHTTPPage _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
-attoHTTPPage _attoHTTPDefaultPage;
-uint16_t _attoHTTP_flags;
+attoHTTPPage_t _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
+attoHTTPPage_t _attoHTTPDefaultPage;
+attoHTTPDefAPICallback _attoHTTPDefaultCallback;
 
 /** This is a map of our mime types */
 static const char *_mimetypes[] = {
@@ -239,6 +245,10 @@ attoHTTPParseMethod()
         } else {
             _attoHTTP_returnCode = UNSUPPORTED;
         }
+#ifdef __DEBUG__
+        printf("Got Method '%s' (%d)\r\n", buffer, _attoHTTPMethod);
+#endif
+
     }
     return ret;
 
@@ -278,6 +288,9 @@ attoHTTPParseURI()
         }
         _attoHTTPPushC(c);
         _attoHTTP_url[_attoHTTP_url_len] = 0;
+#ifdef __DEBUG__
+        printf("URL: '%s'\r\n", _attoHTTP_url);
+#endif
 
     }
     return ret;
@@ -379,41 +392,12 @@ attoHTTPParseHeaders()
         if (strncasecmp(name, "accept", sizeof(name)) == 0) {
             for (i = 0; i < ATTOHTTP_MIME_TYPES; i++) {
                 if (strncasecmp(value, _mimetypes[i], sizeof(value)) == 0) {
-                    _attoHTTP_accept = i;
+                    _attoHTTP_accept = (1<<i);
                 }
             }
         }
     }
     return ret;
-}
-uint16_t
-attoHTTPwrite(const char *buffer, uint16_t len)
-{
-    uint16_t ret = 0;
-    char c;
-    while (len-- > 0) {
-        c = *buffer++;
-        // This makes sure that what we are sending out is UTF-8 compatible.
-        ret += attoHTTPWriteC(c);
-    }
-    return ret;
-}
-
-uint16_t
-attoHTTPprintf(const char *format, ...)
-{
-    char buffer[ATTOHTTP_PRINTF_BUFFER_SIZE];
-    uint16_t count;
-    va_list ap;
-    va_start(ap, format);
-    count = vsnprintf(buffer, 128, format, ap);
-    va_end(ap);
-    return attoHTTPwrite(buffer, count);
-}
-uint16_t
-attoHTTPprint(const char *buffer)
-{
-    return attoHTTPwrite(buffer, strlen(buffer));
 }
 uint16_t
 attoHTTPFirstLine(const char *buffer)
@@ -431,39 +415,160 @@ attoHTTPFirstLine(const char *buffer)
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
+attoHTTPFindAPICallback(void)
+{
+    int8_t ret = 0;
+    attoHTTPDefAPICallback Callback = NULL;
+    char *command[ATTOHTTP_API_LEVELS];
+    char *id[ATTOHTTP_API_LEVELS];
+    uint8_t i;
+    char *url_ptr = _attoHTTP_url;
+    uint16_t ctr = _attoHTTP_url_len;
+    uint8_t cmdlvl = 0;
+    uint8_t idlvl = 0;
+    // Find the Callback
+    if (_attoHTTPDefaultCallback != NULL) {
+        Callback = _attoHTTPDefaultCallback;
+    }
+    if (Callback != NULL) {
+        // Init the buffers
+        for (i = 0; i < ATTOHTTP_API_LEVELS; i++) {
+            command[i] = NULL;
+            id[i] = NULL;
+        }
+        // Parse the URL
+        while ((*url_ptr != 0) && (ctr > 0)) {
+            if (*url_ptr == '/') {
+                if ((cmdlvl == idlvl) && (cmdlvl < ATTOHTTP_API_LEVELS)) {
+                    command[cmdlvl] = url_ptr + 1;
+                    cmdlvl++;
+                } else if ((cmdlvl > idlvl) && (idlvl < ATTOHTTP_API_LEVELS)) {
+                    id[idlvl] = url_ptr + 1;
+                    idlvl++;
+                }
+                *url_ptr = 0;
+            }
+            url_ptr++;
+            ctr--;
+        }
+        ret = Callback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
+    }
+    return ret;
+}
+/**
+ * @brief Finds the method, url, and HTTP version
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+int8_t
 attoHTTPFindPage(void)
 {
     int8_t ret = 0;
     uint8_t i;
-    attoHTTPPage *page = NULL;
-    if (_attoHTTPMethod == GET) {
-        if (_attoHTTPDefaultPage() || _attoHTTPCheckPage(_attoHTTPDefaultPage)) {
-            page = &_attoHTTPDefaultPage;
-        } else {
-            for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
-                if (_attoHTTPCheckPage(_attoHTTPPages[i])) {
-                    page = &_attoHTTPPages[i];
-                    break;
-                }
+    attoHTTPPage_t *page = NULL;
+    if (_attoHTTPDefaultPage() || _attoHTTPCheckPage(_attoHTTPDefaultPage)) {
+        page = &_attoHTTPDefaultPage;
+    } else {
+        for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
+            if (_attoHTTPCheckPage(_attoHTTPPages[i])) {
+                page = &_attoHTTPPages[i];
+                break;
             }
         }
-        if (page != NULL) {
+    }
+    if (page != NULL) {
+        if (_attoHTTPMethod == GET) {
             _attoHTTP_contenttype = page->type;
             _attoHTTP_contentlength = page->size;
             attoHTTPSendHeaders();
             attoHTTPwrite(page->content, page->size);
             ret = 1;
+        } else {
+            _attoHTTP_returnCode = UNSUPPORTED;
+            ret = -1;
         }
-    } else {
-        _attoHTTP_returnCode = UNSUPPORTED;
-        ret = -1;
+    }
+
+    if (ret == 0) {
+        ret = attoHTTPFindAPICallback();
+    }
+    return ret;
+}
+/***************************************************************************
+ * @endcond
+ ***************************************************************************/
+/**
+ * @brief Writes characters out to the client
+ *
+ * @param buffer The buffer to write out
+ * @param len    The length of the buffer
+ *
+ * @return The number of characters written
+ */
+uint16_t
+attoHTTPwrite(const char *buffer, uint16_t len)
+{
+    uint16_t ret = 0;
+    char c;
+    while (len-- > 0) {
+        c = *buffer++;
+        // This makes sure that what we are sending out is UTF-8 compatible.
+        ret += attoHTTPWriteC(c);
     }
     return ret;
 }
 
-/***************************************************************************
- * @endcond
- ***************************************************************************/
+/**
+ * @brief Printf like function to write characters out to the client
+ *
+ * @param format The format string
+ * @param ...    Arguments for the format string
+ *
+ * @return The number of characters written
+ */
+uint16_t
+attoHTTPprintf(const char *format, ...)
+{
+    char buffer[ATTOHTTP_PRINTF_BUFFER_SIZE];
+    uint16_t count;
+    va_list ap;
+    va_start(ap, format);
+    count = vsnprintf(buffer, 128, format, ap);
+    va_end(ap);
+    return attoHTTPwrite(buffer, count);
+}
+/**
+ * @brief Writes a buffer out to the client
+ *
+ * This dynamically determines the length of the string and writes it
+ * out to the client
+ *
+ * @param buffer The buffer to write out
+ *
+ * @return The number of characters written
+ */
+uint16_t
+attoHTTPprint(const char *buffer)
+{
+    return attoHTTPwrite(buffer, strlen(buffer));
+}
+/**
+ * @brief This adds a page to the buffer at the given URL
+ *
+ * @param Callback The callback function to use.
+ *
+ * @return 1 on success, 0 on failure
+ */
+uint8_t
+attoHTTPDefaultREST(attoHTTPDefAPICallback Callback)
+{
+    uint8_t ret = 0;
+    if (_attoHTTPDefaultCallback == NULL) {
+        _attoHTTPDefaultCallback = Callback;
+        ret = 1;
+    }
+    return ret;
+}
 /**
  * @brief This adds a page to the buffer at the given URL
  *
@@ -594,9 +699,9 @@ attoHTTPSendHeaders()
         if (_attoHTTP_contentlength > 0) {
             chars += attoHTTPprintf("Content-Length: %d\r\n", _attoHTTP_contentlength);
         }
-        if (_attoHTTP_flags & ATTOHTTP_FLAG_GZIP) {
-            chars += attoHTTPprint("Content-Encoding: gzip\r\n");
-        }
+#ifdef ATTOHTTP_GZIP_PAGES
+        chars += attoHTTPprint("Content-Encoding: gzip\r\n");
+#endif
         chars += attoHTTPprint("\r\n");
         _attoHTTP_headersSent = 1;
     }
@@ -608,14 +713,14 @@ attoHTTPSendHeaders()
  * @return none
  */
 void
-attoHTTPInit(uint16_t flags)
+attoHTTPInit(void)
 {
     uint8_t i;
-    _attoHTTP_flags = flags;
     _attoHTTPDefaultPage.url[0] = 0;
     _attoHTTPDefaultPage.content = NULL;
     _attoHTTPDefaultPage.size = 0;
     _attoHTTPDefaultPage.type = TEXT_HTML;
+    _attoHTTPDefaultCallback = NULL;
     for (i = 0; i < ATTOHTTP_PAGE_BUFFERS; i++) {
         _attoHTTPPages[i].url[0] = 0;
         _attoHTTPPages[i].content = NULL;
@@ -684,6 +789,9 @@ attoHTTPExecute(void *read, void *write)
             attoHTTPInternalError();
             break;
     }
+#ifdef __DEBUG__
+    printf("Return Code %d\r\n", _attoHTTP_returnCode);
+#endif
 
     return _attoHTTP_returnCode;
 

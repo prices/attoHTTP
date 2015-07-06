@@ -41,6 +41,16 @@
 #undef ATTOHTTP_PRINTF_BUFFER_SIZE
 
 /**
+ * @brief If this flag is set, all pages are expected to be gzipped.
+ *
+ * All pages must be gzipped if this flag is set.  API Pages should still
+ * not be gzipped, however.
+ *
+ * Defaults to not set
+ */
+#undef ATTOHTTP_GZIP_PAGES
+
+/**
  * @brief User function to get a byte
  *
  * This function must be defined by the user.  It will allow this software to

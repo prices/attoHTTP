@@ -55,7 +55,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
     FCT_SETUP_BGN() {
         TestInit();
         memset(write_buffer, 0, WRITE_BUFFER_SIZE);
-        attoHTTPInit(0);
+        attoHTTPInit();
     }
     FCT_SETUP_END();
     /**
