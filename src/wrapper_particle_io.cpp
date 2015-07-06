@@ -100,7 +100,7 @@ attoHTTPWrapperEnd(void)
  * @return 1 if a character was read, 0 otherwise.
  */
 uint16_t
-attoHTTPGetByte(void *read, char *byte) {
+attoHTTPGetByte(void *read, uint8_t *byte) {
     uint16_t ret = 0;
     TCPClient *client = (TCPClient *)read;
     int c;
@@ -128,7 +128,7 @@ attoHTTPGetByte(void *read, char *byte) {
  * @return 1 if a character was read, 0 otherwise.
  */
 uint16_t
-attoHTTPSetByte(void *write, char byte) {
+attoHTTPSetByte(void *write, uint8_t byte) {
     TCPClient *client = (TCPClient *)write;
     return client->write((const uint8_t *)&byte, 1);
 }

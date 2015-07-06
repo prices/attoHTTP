@@ -32,7 +32,7 @@
  * @section char_fcts_get attoHTTPGetByte
  * @subsection char_fcts_get_prototype Prototype
  * @code
- * uint16_t attoHTTPGetByte(void *read, char *byte);
+ * uint16_t attoHTTPGetByte(void *read, uint8_t *byte);
  * @endcode
  *
  * @subsection char_fcts_get_explain Explaination
@@ -51,7 +51,7 @@
  * @section char_fcts_set attoHTTPSetByte
  * @subsection char_fcts_set_prototype Prototype
  * @code
- * uint16_t attoHTTPSetByte(void *write, char byte);
+ * uint16_t attoHTTPSetByte(void *write, uint8_t byte);
  * @endcode
  *
  * @subsection char_fcts_set_explain Explaination
@@ -149,7 +149,7 @@ typedef enum
 } mimetypes_t;
 #define ATTOHTTP_MIME_TYPES 5
 
-typedef int8_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted, char **command, char **id, uint8_t cmdlvl, uint8_t idlvl);
+typedef int8_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl);
 
 /**
  * @brief This keeps track of our pages
@@ -158,7 +158,7 @@ typedef int8_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted,
  */
 typedef struct {
     char url[ATTOHTTP_PAGE_URL_SIZE];
-    const char *content;
+    const uint8_t *content;
     uint16_t size;
     mimetypes_t type;
 } attoHTTPPage_t;
@@ -170,7 +170,7 @@ typedef struct {
  */
 typedef struct _attoHTTPRestAPI {
     char url[ATTOHTTP_PAGE_URL_SIZE];
-    const char *content;
+    const uint8_t *content;
     uint16_t size;
     mimetypes_t type;
 } attoHTTPRestAPI_t;
@@ -187,9 +187,9 @@ uint8_t attoHTTPInternalError();
 uint8_t attoHTTPNotImplemented();
 uint8_t attoHTTPSendHeaders();
 void attoHTTPInit(void);
-uint8_t attoHTTPAddPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type);
-uint8_t attoHTTPDefaultPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type);
-uint16_t attoHTTPwrite(const char *buffer, uint16_t len);
+uint8_t attoHTTPAddPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type);
+uint8_t attoHTTPDefaultPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type);
+uint16_t attoHTTPwrite(const uint8_t *buffer, uint16_t len);
 uint16_t attoHTTPprintf(const char *format, ...);
 uint16_t attoHTTPprint(const char *buffer);
 uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);

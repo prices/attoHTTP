@@ -39,8 +39,8 @@ extern "C" {
     void attoHTTPWrapperInit(uint16_t port);
     void attoHTTPWrapperMain(uint8_t setup);
     void attoHTTPWrapperEnd(void);
-    uint16_t attoHTTPGetByte(void *read, char *byte);
-    uint16_t attoHTTPSetByte(void *write, char byte);
+    uint16_t attoHTTPGetByte(void *read, uint8_t *byte);
+    uint16_t attoHTTPSetByte(void *write, uint8_t byte);
 #ifdef __cplusplus
 }
 #endif

@@ -160,7 +160,7 @@ attoHTTPWrapperEnd(void)
  * @return 1 if a character was read, 0 otherwise.
  */
 static inline uint16_t
-attoHTTPGetByte(void *read, char *byte) {
+attoHTTPGetByte(void *read, uint8_t *byte) {
     int16_t sock = *(int16_t *)read;
     uint16_t ret = 0;
     fd_set active;
@@ -199,7 +199,7 @@ attoHTTPGetByte(void *read, char *byte) {
  * @return 1 if a character was read, 0 otherwise.
  */
 static inline uint16_t
-attoHTTPSetByte(void *write, char byte) {
+attoHTTPSetByte(void *write, uint8_t byte) {
     int16_t sock = *(int16_t *)write;
     return send(sock, &byte, 1, 0);
 }

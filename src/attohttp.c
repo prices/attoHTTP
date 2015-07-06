@@ -60,8 +60,8 @@
 #endif
 
 
-#define _attoHTTPCheckPage(page)  (!_attoHTTPPageEmpty(page) && (0 == strncmp(_attoHTTP_url, page.url, sizeof(page.url))))
-#define _attoHTTPDefaultPage() (!_attoHTTPPageEmpty(_attoHTTPDefaultPage) && (strncmp(_attoHTTP_url, "/", sizeof(_attoHTTP_url)) == 0) && (_attoHTTP_url_len == 1))
+#define _attoHTTPCheckPage(page)  (!_attoHTTPPageEmpty(page) && (0 == strncmp((char *)_attoHTTP_url, (char *)page.url, sizeof(page.url))))
+#define _attoHTTPDefaultPage() (!_attoHTTPPageEmpty(_attoHTTPDefaultPage) && (strncmp((char *)_attoHTTP_url, "/", sizeof(_attoHTTP_url)) == 0) && (_attoHTTP_url_len == 1))
 #define _attoHTTPPushC(char) _attoHTTP_extra_c = char
 #define _attoHTTPPageEmpty(page) (page.content == NULL)
 
@@ -71,11 +71,11 @@
  ***************************************************************************/
 httpmethod_t _attoHTTPMethod;
 httpversion_t _attoHTTPVersion;
-char _attoHTTP_url[ATTOHTTP_URL_BUFFER_SIZE];
+uint8_t _attoHTTP_url[ATTOHTTP_URL_BUFFER_SIZE];
 // This needs to be bigger than a character to save a character + sign information
 int16_t _attoHTTP_extra_c;
-char *_attoHTTP_body;
-char *_attoHTTP_url_params;
+uint8_t *_attoHTTP_body;
+uint8_t *_attoHTTP_url_params;
 uint16_t _attoHTTP_url_len;
 uint16_t _attoHTTP_body_len;
 void *_attoHTTP_read;
@@ -92,12 +92,12 @@ attoHTTPPage_t _attoHTTPDefaultPage;
 attoHTTPDefAPICallback _attoHTTPDefaultCallback;
 
 /** This is a map of our mime types */
-static const char *_mimetypes[] = {
-    [APPLICATION_JSON] = "application/json",
-    [TEXT_HTML] = "text/html",
-    [TEXT_PLAIN] = "text/plain",
-    [TEXT_CSS] = "text/css",
-    [APPLICATION_JAVASCRIPT] = "application/javascript"
+static const uint8_t *_mimetypes[] = {
+    [APPLICATION_JSON] = (uint8_t *)"application/json",
+    [TEXT_HTML] = (uint8_t *)"text/html",
+    [TEXT_PLAIN] = (uint8_t *)"text/plain",
+    [TEXT_CSS] = (uint8_t *)"text/css",
+    [APPLICATION_JAVASCRIPT] = (uint8_t *)"application/javascript"
 };
 
 /***************************************************************************
@@ -140,7 +140,7 @@ attoHTTPInitRun(void)
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
-attoHTTPReadC(char *c)
+attoHTTPReadC(uint8_t *c)
 {
     int8_t ret = 1;
     if (_attoHTTP_extra_c > 0) {
@@ -162,7 +162,7 @@ attoHTTPReadC(char *c)
  * @return 1 if there is more to read, 0 if done reading
  */
 static inline int8_t
-attoHTTPWriteC(char c)
+attoHTTPWriteC(uint8_t c)
 {
     return attoHTTPSetByte(_attoHTTP_write, c);
 }
@@ -175,7 +175,7 @@ int8_t
 attoHTTPParseSpace(void)
 {
     int8_t ret;
-    char c;
+    uint8_t c;
     do {
         ret = attoHTTPReadC(&c);
     } while (isblank(c) && (ret != 0));
@@ -194,7 +194,7 @@ int8_t
 attoHTTPParseEOL(void)
 {
     uint8_t ret = 1;
-    char c;
+    uint8_t c;
     int8_t eolCount = 0;
     // Remove any extra space
     do {
@@ -218,7 +218,7 @@ int8_t
 attoHTTPParseMethod()
 {
     uint8_t ret = 1;
-    char buffer[10];
+    uint8_t buffer[10];
     uint16_t ptr;
     _attoHTTP_extra_c = -1;
     // Remove any extra space
@@ -236,15 +236,15 @@ attoHTTPParseMethod()
         } while (ret && (ptr < (sizeof(buffer) - 1)));
         buffer[ptr] = 0;
 
-        if (strncmp(HTTP_METHOD_GET, buffer, sizeof(buffer)) == 0) {
+        if (strncmp(HTTP_METHOD_GET, (char *)buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = GET;
-        } else if (strncmp(HTTP_METHOD_POST, buffer, sizeof(buffer)) == 0) {
+        } else if (strncmp(HTTP_METHOD_POST, (char *)buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = POST;
-        } else if (strncmp(HTTP_METHOD_PUT, buffer, sizeof(buffer)) == 0) {
+        } else if (strncmp(HTTP_METHOD_PUT, (char *)buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = PUT;
-        } else if (strncmp(HTTP_METHOD_DELETE, buffer, sizeof(buffer)) == 0) {
+        } else if (strncmp(HTTP_METHOD_DELETE, (char *)buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = DELETE;
-        } else if (strncmp(HTTP_METHOD_PATCH, buffer, sizeof(buffer)) == 0) {
+        } else if (strncmp(HTTP_METHOD_PATCH, (char *)buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = PATCH;
         } else {
             _attoHTTP_returnCode = UNSUPPORTED;
@@ -266,7 +266,7 @@ int8_t
 attoHTTPParseURI()
 {
     uint8_t ret;
-    char c;
+    uint8_t c;
     // Remove any extra space
     ret = attoHTTPParseSpace();
 
@@ -309,7 +309,7 @@ int8_t
 attoHTTPParseVersion()
 {
     uint8_t ret;
-    char buffer[10];
+    uint8_t buffer[10];
     uint16_t ptr;
     // Remove any extra space
     ret = attoHTTPParseSpace();
@@ -327,9 +327,9 @@ attoHTTPParseVersion()
         _attoHTTPPushC(buffer[ptr]);
         buffer[ptr] = 0;
         _attoHTTPVersion = VUNKNOWN;
-        if (strncmp(HTTP_VERSION_1_0, buffer, ptr) == 0) {
+        if (strncmp(HTTP_VERSION_1_0, (char *)buffer, ptr) == 0) {
             _attoHTTPVersion = V1_0;
-        } else if (strncmp(HTTP_VERSION_1_1, buffer, ptr) == 0) {
+        } else if (strncmp(HTTP_VERSION_1_1, (char *)buffer, ptr) == 0) {
             _attoHTTPVersion = V1_1;
         }
     }
@@ -344,7 +344,7 @@ attoHTTPParseVersion()
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
-attoHTTPParseHeader(char *name, uint16_t namesize, char *value, uint16_t valuesize)
+attoHTTPParseHeader(uint8_t *name, uint16_t namesize, uint8_t *value, uint16_t valuesize)
 {
     uint8_t ret;
     namesize--; // Account for the termination character
@@ -388,14 +388,14 @@ attoHTTPParseHeaders()
 {
     int8_t ret = 1;
     uint8_t i;
-    char name[ATTOHTTP_HEADER_NAME_SIZE];
-    char value[ATTOHTTP_HEADER_VALUE_SIZE];
+    uint8_t name[ATTOHTTP_HEADER_NAME_SIZE];
+    uint8_t value[ATTOHTTP_HEADER_VALUE_SIZE];
 
     while ((_attoHTTP_headersDone == 0) && (ret != 0)) {
         ret = attoHTTPParseHeader(name, sizeof(name), value, sizeof(value));
-        if (strncasecmp(name, "accept", sizeof(name)) == 0) {
+        if (strncasecmp((char *)name, "accept", sizeof(name)) == 0) {
             for (i = 0; i < ATTOHTTP_MIME_TYPES; i++) {
-                if (strncasecmp(value, _mimetypes[i], sizeof(value)) == 0) {
+                if (strncasecmp((char *)value, (char *)_mimetypes[i], sizeof(value)) == 0) {
                     _attoHTTP_accept = (1<<i);
                 }
             }
@@ -423,10 +423,10 @@ attoHTTPFindAPICallback(void)
 {
     int8_t ret = 0;
     attoHTTPDefAPICallback Callback = NULL;
-    char *command[ATTOHTTP_API_LEVELS];
-    char *id[ATTOHTTP_API_LEVELS];
+    uint8_t *command[ATTOHTTP_API_LEVELS];
+    uint8_t *id[ATTOHTTP_API_LEVELS];
     uint8_t i;
-    char *url_ptr = _attoHTTP_url;
+    uint8_t *url_ptr = _attoHTTP_url;
     uint16_t ctr = _attoHTTP_url_len;
     uint8_t cmdlvl = 0;
     uint8_t idlvl = 0;
@@ -510,10 +510,10 @@ attoHTTPFindPage(void)
  * @return The number of characters written
  */
 uint16_t
-attoHTTPwrite(const char *buffer, uint16_t len)
+attoHTTPwrite(const uint8_t *buffer, uint16_t len)
 {
     uint16_t ret = 0;
-    char c;
+    uint8_t c;
     while (len-- > 0) {
         c = *buffer++;
         // This makes sure that what we are sending out is UTF-8 compatible.
@@ -539,7 +539,7 @@ attoHTTPprintf(const char *format, ...)
     va_start(ap, format);
     count = vsnprintf(buffer, 128, format, ap);
     va_end(ap);
-    return attoHTTPwrite(buffer, count);
+    return attoHTTPwrite((uint8_t *)buffer, count);
 }
 /**
  * @brief Writes a buffer out to the client
@@ -554,7 +554,7 @@ attoHTTPprintf(const char *format, ...)
 uint16_t
 attoHTTPprint(const char *buffer)
 {
-    return attoHTTPwrite(buffer, strlen(buffer));
+    return attoHTTPwrite((uint8_t *)buffer, strlen(buffer));
 }
 /**
  * @brief This adds a page to the buffer at the given URL
@@ -584,7 +584,7 @@ attoHTTPDefaultREST(attoHTTPDefAPICallback Callback)
  * @return 1 on success, 0 on failure
  */
 uint8_t
-attoHTTPDefaultPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type)
+attoHTTPDefaultPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type)
 {
     uint8_t ret = 0;
     if (_attoHTTPPageEmpty(_attoHTTPDefaultPage)) {
@@ -608,7 +608,7 @@ attoHTTPDefaultPage(const char *url, const char *page, uint16_t page_len, mimety
  * @return 1 on success, 0 on failure
  */
 uint8_t
-attoHTTPAddPage(const char *url, const char *page, uint16_t page_len, mimetypes_t type)
+attoHTTPAddPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type)
 {
     uint8_t i;
     uint8_t ret = 0;
@@ -618,7 +618,7 @@ attoHTTPAddPage(const char *url, const char *page, uint16_t page_len, mimetypes_
             _attoHTTPPages[i].content = page;
             _attoHTTPPages[i].size = page_len;
             _attoHTTPPages[i].type = type;
-            strncpy(_attoHTTPPages[i].url, url, sizeof(_attoHTTPPages[i].url));
+            strncpy((char *)_attoHTTPPages[i].url, (char *)url, sizeof(_attoHTTPPages[i].url));
             ret = 1;
             break;
         }

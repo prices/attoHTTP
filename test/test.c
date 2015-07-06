@@ -31,7 +31,7 @@
 #include <inttypes.h>
 #include "test.h"
 
-char *TestWriteString, *TestReadString;
+uint8_t *TestWriteString, *TestReadString;
 uint16_t TestWriteCount, TestReadCount;
 
 FCT_BGN()
@@ -52,10 +52,10 @@ TestInit(void)
 
 
 uint16_t
-attoHTTPGetByte(void *extra, char *byte)
+attoHTTPGetByte(void *extra, uint8_t *byte)
 {
     if (TestReadString == NULL) {
-        TestReadString = (char *)extra;
+        TestReadString = (uint8_t *)extra;
     }
     if ((TestReadString != NULL) && (byte != NULL)) {
         *byte = TestReadString[TestReadCount];
@@ -70,10 +70,10 @@ attoHTTPGetByte(void *extra, char *byte)
 }
 
 uint16_t
-attoHTTPSetByte(void *extra, char byte)
+attoHTTPSetByte(void *extra, uint8_t byte)
 {
     if (TestWriteString == NULL) {
-        TestWriteString = (char *)extra;
+        TestWriteString = (uint8_t *)extra;
     }
     if (TestWriteString != NULL) {
         TestWriteString[TestWriteCount] = byte;

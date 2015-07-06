@@ -63,7 +63,7 @@
  *
  * @return 1 if a character was read, 0 otherwise.
  */
-uint16_t attoHTTPGetByte(void *read, char *byte);
+uint16_t attoHTTPGetByte(void *read, uint8_t *byte);
 /**
  * @brief User function to set a byte
  *
@@ -77,7 +77,7 @@ uint16_t attoHTTPGetByte(void *read, char *byte);
  *
  * @return 1 if a character was read, 0 otherwise.
  */
-uint16_t attoHTTPSetByte(void *write, char byte);
+uint16_t attoHTTPSetByte(void *write, uint8_t byte);
 
 
 #endif // #ifndef __ATTOHTTP_CONFIG_H__
