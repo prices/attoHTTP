@@ -175,6 +175,9 @@ typedef struct _attoHTTPRestAPI {
     mimetypes_t type;
 } attoHTTPRestAPI_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 returncode_t attoHTTPExecute(void *read, void *write);
 uint8_t attoHTTPOK();
 uint8_t attoHTTPAccepted();
@@ -190,6 +193,9 @@ uint16_t attoHTTPwrite(const char *buffer, uint16_t len);
 uint16_t attoHTTPprintf(const char *format, ...);
 uint16_t attoHTTPprint(const char *buffer);
 uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
+#ifdef __cplusplus
+}
+#endif
 
 
 #define __ATTOHTTP_H_DONE__

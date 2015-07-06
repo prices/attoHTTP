@@ -72,7 +72,8 @@
 httpmethod_t _attoHTTPMethod;
 httpversion_t _attoHTTPVersion;
 char _attoHTTP_url[ATTOHTTP_URL_BUFFER_SIZE];
-char _attoHTTP_extra_c;
+// This needs to be bigger than a character to save a character + sign information
+int16_t _attoHTTP_extra_c;
 char *_attoHTTP_body;
 char *_attoHTTP_url_params;
 uint16_t _attoHTTP_url_len;
@@ -145,9 +146,11 @@ attoHTTPReadC(char *c)
     if (_attoHTTP_extra_c > 0) {
         *c = _attoHTTP_extra_c;
         _attoHTTP_extra_c = -1;
+        /*
     } else if (_attoHTTP_extra_c == 0) {
         *c = 0;
         ret = 0;
+        */
     } else {
         ret = attoHTTPGetByte(_attoHTTP_read, c);
     }
@@ -214,9 +217,10 @@ attoHTTPParseEOL(void)
 int8_t
 attoHTTPParseMethod()
 {
-    uint8_t ret;
+    uint8_t ret = 1;
     char buffer[10];
     uint16_t ptr;
+    _attoHTTP_extra_c = -1;
     // Remove any extra space
     ret = attoHTTPParseSpace();
 
