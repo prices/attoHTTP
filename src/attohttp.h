@@ -103,6 +103,7 @@ typedef enum
     UNSUPPORTED,
     BADREQUEST,
     INTERNAL_ERROR,
+    NOT_IMPLEMENTED,
     NOT_FOUND
 } returncode_t;
 
@@ -193,6 +194,8 @@ uint16_t attoHTTPwrite(const uint8_t *buffer, uint16_t len);
 uint16_t attoHTTPprintf(const char *format, ...);
 uint16_t attoHTTPprint(const char *buffer);
 uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
+uint8_t attoHTTPRESTSendHeaders(mimetypes_t type);
+
 #ifdef __cplusplus
 }
 #endif

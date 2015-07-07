@@ -173,7 +173,10 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
                 exit(errno);
             }
         }
-        if ((ret > 0) && FD_ISSET(sock, &active)) {
+        if (ret == 0) {
+            close(sock);
+            sock = -1;
+        } else if ((ret > 0) && FD_ISSET(sock, &active)) {
             ret = recv(sock, byte, 1, 0);
             #ifdef __DEBUG__
             if (*byte < 32) {

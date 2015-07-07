@@ -695,7 +695,7 @@ attoHTTPNotImplemented()
  * @return The number of characters printed
  */
 uint8_t
-attoHTTPSendHeaders()
+attoHTTPSendHeaders(void)
 {
     uint16_t chars = 0;
     if (_attoHTTP_firstlineSent == 0) {
@@ -709,6 +709,30 @@ attoHTTPSendHeaders()
 #ifdef ATTOHTTP_GZIP_PAGES
         chars += attoHTTPprint("Content-Encoding: gzip\r\n");
 #endif
+        chars += attoHTTPprint("\r\n");
+        _attoHTTP_headersSent = 1;
+    }
+    return chars;
+}
+/**
+ * @brief Sends out the headers for the RESTful API
+ *
+ * @param type The type of return
+ *
+ * @return The number of characters printed
+ */
+uint8_t
+attoHTTPRESTSendHeaders(mimetypes_t type)
+{
+    uint16_t chars = 0;
+    if (_attoHTTP_firstlineSent == 0) {
+        attoHTTPOK();
+    }
+    if (_attoHTTP_headersSent == 0) {
+        chars += attoHTTPprintf("Content-Type: %s\r\n", _mimetypes[type]);
+        if (_attoHTTP_contentlength > 0) {
+            chars += attoHTTPprintf("Content-Length: %d\r\n", _attoHTTP_contentlength);
+        }
         chars += attoHTTPprint("\r\n");
         _attoHTTP_headersSent = 1;
     }
