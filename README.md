@@ -11,6 +11,7 @@ It will compile and run on 32 and 64bit x86 to perform the testing.
 
  - GNU Make
  - gcc
+ - doxygen to make the documentation
 
 ### Notes on GCC
 gcc may not be required.  I use the compiler flags '-Wall -Werror -pedantic -std=c11'.
