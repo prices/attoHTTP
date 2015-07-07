@@ -22,6 +22,7 @@ provided it doesn't break compiling on gcc.
 
 ## Make Targets
 
+ - `all`  : builds the docs and runs the tests
  - `test` : Compiles and runs the tests
  - `junit` : Compiles and creates JUnit compatible XML files
  - `doc` : Uses doxygen to build the source documentation
