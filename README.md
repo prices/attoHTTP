@@ -11,16 +11,18 @@ It will compile and run on 32 and 64bit x86 to perform the testing.
 
  - GNU Make
  - gcc
+ - doxygen to make the documentation
 
 ### Notes on GCC
 gcc may not be required.  I use the compiler flags '-Wall -Werror -pedantic -std=c11'.
 This should make it so that this is ANSI standard C11 that I am writing and it
-*should* compile in any ANSI standard C11 compiler.  While I do test other compilers,
+*should* compile in any ANSI standard C11 compiler.  While I do not test other compilers,
 I am happy to accept pull requests to make the code compile on other compilers,
 provided it doesn't break compiling on gcc.
 
 ## Make Targets
 
+ - `all`  : builds the docs and runs the tests
  - `test` : Compiles and runs the tests
  - `junit` : Compiles and creates JUnit compatible XML files
  - `doc` : Uses doxygen to build the source documentation
