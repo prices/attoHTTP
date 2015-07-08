@@ -84,6 +84,7 @@
 
 #define HTTP_VERSION HTTP_VERSION_1_0
 
+#define HTTPEOL "\r\n"
 
 
 #ifndef ATTOHTTP_PAGE_URL_SIZE
@@ -180,12 +181,6 @@ typedef struct _attoHTTPRestAPI {
 extern "C" {
 #endif
 returncode_t attoHTTPExecute(void *read, void *write);
-uint8_t attoHTTPOK();
-uint8_t attoHTTPAccepted();
-uint8_t attoHTTPBadRequest();
-uint8_t attoHTTPNotFound();
-uint8_t attoHTTPInternalError();
-uint8_t attoHTTPNotImplemented();
 uint8_t attoHTTPSendHeaders();
 void attoHTTPInit(void);
 uint8_t attoHTTPAddPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type);
@@ -194,11 +189,78 @@ uint16_t attoHTTPwrite(const uint8_t *buffer, uint16_t len);
 uint16_t attoHTTPprintf(const char *format, ...);
 uint16_t attoHTTPprint(const char *buffer);
 uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
-uint8_t attoHTTPRESTSendHeaders(mimetypes_t type);
+uint16_t attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers);
+uint16_t attoHTTPFirstLine(uint16_t code);
 
 #ifdef __cplusplus
 }
 #endif
+
+/***********************************************************************
+ *                   Inline Functions
+ ***********************************************************************/
+/**
+ * @brief This prints out the OK message
+ *
+ * @return The number of characters printed
+ */
+static inline uint8_t
+attoHTTPOK()
+{
+
+    return attoHTTPFirstLine(200);
+
+}
+/**
+ * @brief This prints out the Accepted message
+ *
+ * @return The number of characters printed
+ */
+static inline uint8_t
+attoHTTPAccepted()
+{
+    return attoHTTPFirstLine(202);
+}
+/**
+ * @brief This prints out the Bad Request Message
+ *
+ * @return The number of characters printed
+ */
+static inline uint8_t
+attoHTTPBadRequest()
+{
+    return attoHTTPFirstLine(400);
+}
+/**
+ * @brief This prints out the Not Found Message
+ *
+ * @return The number of characters printed
+ */
+static inline uint8_t
+attoHTTPNotFound()
+{
+    return attoHTTPFirstLine(404);
+}
+/**
+ * @brief This prints out the Internal Error message
+ *
+ * @return The number of characters printed
+ */
+static inline uint8_t
+attoHTTPInternalError()
+{
+    return attoHTTPFirstLine(500);
+}
+/**
+ * @brief This prints out the Not Impelemented message
+ *
+ * @return The number of characters printed
+ */
+static inline uint8_t
+attoHTTPNotImplemented()
+{
+    return attoHTTPFirstLine(501);
+}
 
 
 #define __ATTOHTTP_H_DONE__

@@ -250,7 +250,7 @@ attoHTTPParseMethod()
             _attoHTTP_returnCode = UNSUPPORTED;
         }
 #ifdef __DEBUG__
-        printf("Got Method '%s' (%d)\r\n", buffer, _attoHTTPMethod);
+        printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
 #endif
 
     }
@@ -293,7 +293,7 @@ attoHTTPParseURI()
         _attoHTTPPushC(c);
         _attoHTTP_url[_attoHTTP_url_len] = 0;
 #ifdef __DEBUG__
-        printf("URL: '%s'\r\n", _attoHTTP_url);
+        printf("URL: '%s'" HTTPEOL, _attoHTTP_url);
 #endif
 
     }
@@ -403,16 +403,8 @@ attoHTTPParseHeaders()
     }
     return ret;
 }
-uint16_t
-attoHTTPFirstLine(const char *buffer)
-{
-    uint16_t chars = 0;
-    if (_attoHTTP_firstlineSent == 0) {
-        _attoHTTP_firstlineSent = 1;
-        chars += attoHTTPprint(buffer);
-    }
-    return chars;
-}
+
+
 /**
  * @brief Finds the method, url, and HTTP version
  *
@@ -560,6 +552,56 @@ attoHTTPprint(const char *buffer)
     return attoHTTPwrite((uint8_t *)buffer, strlen(buffer));
 }
 /**
+ * @brief Prints out the first line of the reply
+ *
+ * This currently supports the following return codes:
+ *  - 200 OK
+ *  - 202 Accepted
+ *  - 400 Bad Request
+ *  - 404 Not Fount
+ *  - 500 Internal Error
+ *  - 501 Not Implemented
+ *
+ * Anything else returns: 500 Internal Error
+ *
+ * @param code The return code to use.
+ *
+ * @return The number of characters printed out
+ */
+uint16_t
+attoHTTPFirstLine(uint16_t code)
+{
+    char *str = 0;
+    uint16_t chars = 0;
+    if (_attoHTTP_firstlineSent == 0) {
+        _attoHTTP_firstlineSent = 1;
+        switch (code) {
+            case 200:
+                str = "OK";
+                break;
+            case 202:
+                str = "Accepted";
+                break;
+            case 400:
+                str = "Bad Request";
+                break;
+            case 404:
+                str = "Not Found";
+                break;
+            case 501:
+                str = "Not Implemented";
+                break;
+            default:
+                str = "Internal Error";
+                code = 500;
+                _attoHTTP_returnCode = INTERNAL_ERROR;
+                break;
+        }
+        chars += attoHTTPprintf(HTTP_VERSION " %d %s" HTTPEOL, code, str);
+    }
+    return chars;
+}
+/**
  * @brief This adds a page to the buffer at the given URL
  *
  * @param Callback The callback function to use.
@@ -634,67 +676,6 @@ attoHTTPAddPage(const char *url, const uint8_t *page, uint16_t page_len, mimetyp
  * @return The number of characters printed
  */
 uint8_t
-attoHTTPOK()
-{
-    return attoHTTPFirstLine(HTTP_VERSION " 200 OK\r\n");
-
-}
-/**
- * @brief This prints out the Accepted message
- *
- * @return The number of characters printed
- */
-uint8_t
-attoHTTPAccepted()
-{
-    return attoHTTPFirstLine(HTTP_VERSION " 202 Accepted\r\n");
-}
-/**
- * @brief This prints out the Bad Request Message
- *
- * @return The number of characters printed
- */
-uint8_t
-attoHTTPBadRequest()
-{
-    return attoHTTPFirstLine(HTTP_VERSION " 400 Bad Request\r\n");
-}
-/**
- * @brief This prints out the Not Found Message
- *
- * @return The number of characters printed
- */
-uint8_t
-attoHTTPNotFound()
-{
-    return attoHTTPFirstLine(HTTP_VERSION " 404 Not Found\r\n");
-}
-/**
- * @brief This prints out the Internal Error message
- *
- * @return The number of characters printed
- */
-uint8_t
-attoHTTPInternalError()
-{
-    return attoHTTPFirstLine(HTTP_VERSION " 500 Internal Error\r\n");
-}
-/**
- * @brief This prints out the Not Impelemented message
- *
- * @return The number of characters printed
- */
-uint8_t
-attoHTTPNotImplemented()
-{
-    return attoHTTPFirstLine(HTTP_VERSION " 501 Not Implemented\r\n");
-}
-/**
- * @brief This prints out the OK message
- *
- * @return The number of characters printed
- */
-uint8_t
 attoHTTPSendHeaders(void)
 {
     uint16_t chars = 0;
@@ -702,14 +683,14 @@ attoHTTPSendHeaders(void)
         attoHTTPOK();
     }
     if (_attoHTTP_headersSent == 0) {
-        chars += attoHTTPprintf("Content-Type: %s\r\n", _mimetypes[_attoHTTP_contenttype]);
+        chars += attoHTTPprintf("Content-Type: %s" HTTPEOL, _mimetypes[_attoHTTP_contenttype]);
         if (_attoHTTP_contentlength > 0) {
-            chars += attoHTTPprintf("Content-Length: %d\r\n", _attoHTTP_contentlength);
+            chars += attoHTTPprintf("Content-Length: %d" HTTPEOL, _attoHTTP_contentlength);
         }
 #ifdef ATTOHTTP_GZIP_PAGES
-        chars += attoHTTPprint("Content-Encoding: gzip\r\n");
+        chars += attoHTTPprint("Content-Encoding: gzip" HTTPEOL);
 #endif
-        chars += attoHTTPprint("\r\n");
+        chars += attoHTTPprint(HTTPEOL);
         _attoHTTP_headersSent = 1;
     }
     return chars;
@@ -717,23 +698,25 @@ attoHTTPSendHeaders(void)
 /**
  * @brief Sends out the headers for the RESTful API
  *
- * @param type The type of return
+ * @param code    The HTTP return code
+ * @param type    The mime type of return
+ * @param headers Extra headers to send.  Each header should end with HTTPEOL
  *
  * @return The number of characters printed
  */
-uint8_t
-attoHTTPRESTSendHeaders(mimetypes_t type)
+uint16_t
+attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers)
 {
     uint16_t chars = 0;
     if (_attoHTTP_firstlineSent == 0) {
-        attoHTTPOK();
+        attoHTTPFirstLine(code);
     }
     if (_attoHTTP_headersSent == 0) {
-        chars += attoHTTPprintf("Content-Type: %s\r\n", _mimetypes[type]);
-        if (_attoHTTP_contentlength > 0) {
-            chars += attoHTTPprintf("Content-Length: %d\r\n", _attoHTTP_contentlength);
+        chars += attoHTTPprintf("Content-Type: %s" HTTPEOL, type);
+        if (headers != NULL) {
+            chars += attoHTTPprint(headers);
         }
-        chars += attoHTTPprint("\r\n");
+        chars += attoHTTPprint(HTTPEOL);
         _attoHTTP_headersSent = 1;
     }
     return chars;
@@ -821,7 +804,7 @@ attoHTTPExecute(void *read, void *write)
             break;
     }
 #ifdef __DEBUG__
-    printf("Return Code %d\r\n", _attoHTTP_returnCode);
+    printf("Return Code %d" HTTPEOL, _attoHTTP_returnCode);
 #endif
 
     return _attoHTTP_returnCode;

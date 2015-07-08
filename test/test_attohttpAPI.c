@@ -258,6 +258,80 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
     }
     FCT_TEST_END()
 
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETDefaultRESTSendHeadersBadCode) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            attoHTTPRESTSendHeaders(12345, "application/json", NULL);
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /level1 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_chk_eq_str("HTTP/1.0 500 Internal Error\r\nContent-Type: application/json\r\n\r\n", write_buffer);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETDefaultRESTSendHeadersOKCode) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            attoHTTPRESTSendHeaders(200, "application/json", NULL);
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /level1 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n", write_buffer);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETDefaultRESTSendHeadersExtraHeaders) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            attoHTTPRESTSendHeaders(200, "application/json", "Content-Encoding: gzip" HTTPEOL);
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /level1 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Encoding: gzip\r\n\r\n", write_buffer);
+    }
+    FCT_TEST_END()
+
+
 
 }
 FCTMF_FIXTURE_SUITE_END();
