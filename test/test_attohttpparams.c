@@ -97,6 +97,38 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
         fct_xchk((ret == OK), "Return was not 'OK'");
     }
     FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETParamsWithEncodedChars) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            char name[40];
+            char value[40];
+
+            attoHTTPParseParam(name, 40, value, 40);
+            fct_chk_eq_str("hello", name);
+            fct_chk_eq_str("1", value);
+            attoHTTPParseParam(name, 40, value, 40);
+            fct_chk_eq_str(name, "goodbye");
+            fct_chk_eq_str(value, "{here And There}");
+
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /level1?hello=%31&goodbye=%7Bhere%20And%20There%7d HTTP/1.0\r\nAccept: application/json\r\n\r\n",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+    }
+    FCT_TEST_END()
 
 
 

@@ -30,6 +30,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <inttypes.h>
 #include <string.h>
@@ -635,6 +636,7 @@ uint8_t
 attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
 {
     char c;
+    char decode[3];
     uint8_t ret;
     do {
         if (_attoHTTPMethod == GET) {
@@ -651,12 +653,21 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
                 name_len = 0;
             } else if ((c == '&') || isspace(c)) {
                 break;
-            } else if (name_len > 0) {
-                *name++ = c;
-                name_len--;
             } else {
-                *value++ = c;
-                value_len--;
+                // This decodes the URL
+                if (c == '%') {
+                    decode[0] = *_attoHTTP_url_params++;
+                    decode[1] = *_attoHTTP_url_params++;
+                    decode[3] = 0;
+                    c = strtol(decode, NULL, 16);
+                }
+                if (name_len > 0) {
+                    *name++ = c;
+                    name_len--;
+                } else {
+                    *value++ = c;
+                    value_len--;
+                }
             }
         } else {
             break;
