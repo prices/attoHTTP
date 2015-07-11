@@ -497,6 +497,35 @@ attoHTTPFindPage(void)
     }
     return ret;
 }
+/**
+ * @brief This gets a character for the URL parsing
+ *
+ * This character could be in the waiting buffer, or in the URL buffer.  This
+ * function chooses the buffer based on the HTTP method.
+ *
+ * @param c The character buffer to put the character in
+ *
+ * @return The number of characters retrieved.
+ */
+uint8_t
+attoHTTPParseURLParamChar(char *c)
+{
+    uint8_t ret = 0;
+    if (_attoHTTPMethod == GET) {
+        if (_attoHTTP_url_params_start++ < ATTOHTTP_URL_BUFFER_SIZE) {
+            *c = *_attoHTTP_url_params;
+            _attoHTTP_url_params++;
+            ret = 1;
+        }
+    } else {
+        // Take up any space characters in the body.
+        do {
+            ret = attoHTTPReadC((uint8_t *)c);
+        } while ((ret == 1) && (isspace(*c) || (*c == '?')));
+    }
+    return ret;
+
+}
 /***************************************************************************
  * @endcond
  ***************************************************************************/
@@ -639,16 +668,8 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
     char decode[3];
     uint8_t ret;
     do {
-        if (_attoHTTPMethod == GET) {
-            c = *_attoHTTP_url_params;
-        } else {
-            ret = attoHTTPReadC((uint8_t *)&c);
-            if (ret == 0) {
-                break;
-            }
-        }
-        if (c != 0) {
-            _attoHTTP_url_params++;
+        ret = attoHTTPParseURLParamChar(&c);
+        if ((ret != 0) && (c != 0)) {
             if (c == '=') {
                 name_len = 0;
             } else if ((c == '&') || isspace(c)) {
@@ -656,8 +677,8 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
             } else {
                 // This decodes the URL
                 if (c == '%') {
-                    decode[0] = *_attoHTTP_url_params++;
-                    decode[1] = *_attoHTTP_url_params++;
+                    attoHTTPParseURLParamChar(&decode[0]);
+                    attoHTTPParseURLParamChar(&decode[1]);
                     decode[3] = 0;
                     c = strtol(decode, NULL, 16);
                 }
@@ -672,7 +693,7 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
         } else {
             break;
         }
-    } while ((value_len > 0) && (_attoHTTP_url_params_start++ < ATTOHTTP_URL_BUFFER_SIZE));
+    } while ((value_len > 0) && ret);
     // Make sure there is a trailing \0
     *value= 0;
     *name = 0;
@@ -703,11 +724,12 @@ uint8_t
 attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
 {
     uint8_t ret = 0;
+    *name = 0;
+    *value = 0;
     switch (_attoHTTPMethod) {
+        case POST:
         case GET:
             ret = attoHTTPParseURLParam(name, name_len, value, value_len);
-            break;
-        case POST:
             break;
         case PUT:
         case PATCH:
