@@ -93,13 +93,16 @@ attoHTTPPage_t _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
 attoHTTPPage_t _attoHTTPDefaultPage;
 attoHTTPDefAPICallback _attoHTTPDefaultCallback;
 
+uint8_t _attoHTTPParseJSONParam_cblevel;
+
 /** This is a map of our mime types */
 static const uint8_t *_mimetypes[] = {
     [APPLICATION_JSON] = (uint8_t *)"application/json",
     [TEXT_HTML] = (uint8_t *)"text/html",
     [TEXT_PLAIN] = (uint8_t *)"text/plain",
     [TEXT_CSS] = (uint8_t *)"text/css",
-    [APPLICATION_JAVASCRIPT] = (uint8_t *)"application/javascript"
+    [APPLICATION_JAVASCRIPT] = (uint8_t *)"application/javascript",
+    [APPLICATION_XWWWFORMURLENCODED] = (uint8_t *)"application/x-www-form-urlencoded"
 };
 
 /***************************************************************************
@@ -134,6 +137,7 @@ attoHTTPInitRun(void)
     _attoHTTP_accept = TEXT_HTML;
     _attoHTTP_contenttype = TEXT_HTML;
     _attoHTTP_contentlength = 0;
+    _attoHTTPParseJSONParam_cblevel = 0;
 
 }
 
@@ -403,6 +407,13 @@ attoHTTPParseHeaders()
                     _attoHTTP_accept = (1<<i);
                 }
             }
+        } else if (strncasecmp((char *)name, "content-type", sizeof(name)) == 0) {
+            for (i = 0; i < ATTOHTTP_MIME_TYPES; i++) {
+                if (strncasecmp((char *)value, (char *)_mimetypes[i], sizeof(value)) == 0) {
+                    _attoHTTP_contenttype = i;
+                    break;
+                }
+            }
         }
     }
     return ret;
@@ -635,6 +646,94 @@ attoHTTPFirstLine(uint16_t code)
     return chars;
 }
 /**
+ * @brief This retrieves the next parameter in a JSON string
+ *
+ * @param name      The buffer to put the name into
+ * @param name_len  The length of the name buffer
+ * @param value     The buffer to put the value into
+ * @param value_len The length of the value buffer
+ *
+ * @return 1 on success, 0 on no
+ */
+uint8_t
+attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
+{
+    char c;
+    uint8_t ret;
+    uint8_t sblevel = 0;
+    uint8_t sqlevel = 0;
+    uint8_t dqlevel = 0;
+    do {
+        ret = attoHTTPReadC((uint8_t *)&c);
+        if ((ret != 0) && (c != 0)) {
+            if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (sblevel == 0)) {
+                name_len = 0;
+            } else if (isspace(c) && (sqlevel == 0) && (dqlevel == 0) && (_attoHTTPParseJSONParam_cblevel <= 1) && (sblevel == 0)) {
+                // Ignore space if it is not between quote marks
+                continue;
+            } else if ((c == ',') && (_attoHTTPParseJSONParam_cblevel == 1) && (sblevel == 0)) {
+                break;
+            } else if ((c == '\'') && (_attoHTTPParseJSONParam_cblevel == 1) && (sblevel == 0)) {
+                if (sqlevel == 1) {
+                    sqlevel = 0;
+                } else {
+                    sqlevel = 1;
+                }
+                continue;
+            } else if ((c == '"') && (_attoHTTPParseJSONParam_cblevel == 1) && (sblevel == 0)) {
+                if (dqlevel == 1) {
+                    dqlevel = 0;
+                } else {
+                    dqlevel = 1;
+                }
+                continue;
+            } else if ((c == '{') && (_attoHTTPParseJSONParam_cblevel == 0)) {
+                // Ignore the first one
+                _attoHTTPParseJSONParam_cblevel++;
+                continue;
+            } else if ((c == '}') && (_attoHTTPParseJSONParam_cblevel == 1)) {
+                // Ignore the first one
+                _attoHTTPParseJSONParam_cblevel--;
+                break;
+            } else {
+                if (name_len > 0) {
+                    *name++ = c;
+                    name_len--;
+                } else {
+                    *value++ = c;
+                    value_len--;
+                }
+                if (c == '{') {
+                    _attoHTTPParseJSONParam_cblevel++;
+                }
+                if (c == '}') {
+                    _attoHTTPParseJSONParam_cblevel--;
+                    if (_attoHTTPParseJSONParam_cblevel == 1) {
+                        break;
+                    }
+                }
+                if (c == '[') {
+                    sblevel++;
+                }
+                if (c == ']') {
+                    sblevel--;
+                    if (sblevel == 0) {
+                        break;
+                    }
+                }
+            }
+        } else {
+            break;
+        }
+    } while ((value_len > 0) && ret);
+    // Make sure there is a trailing \0
+    *value= 0;
+    *name = 0;
+
+    return c == 0;
+
+}
+/**
  * @brief This adds a page to the buffer at the given URL
  *
  * @param Callback The callback function to use.
@@ -652,7 +751,7 @@ attoHTTPDefaultREST(attoHTTPDefAPICallback Callback)
     return ret;
 }
 /**
- * @brief This retrieves the next parameter.
+ * @brief This retrieves the next parameter in a URL string
  *
  * @param name      The buffer to put the name into
  * @param name_len  The length of the name buffer
@@ -727,13 +826,18 @@ attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
     *name = 0;
     *value = 0;
     switch (_attoHTTPMethod) {
-        case POST:
         case GET:
             ret = attoHTTPParseURLParam(name, name_len, value, value_len);
             break;
+        case POST:
         case PUT:
         case PATCH:
         case DELETE:
+            if (_attoHTTP_contenttype == APPLICATION_XWWWFORMURLENCODED) {
+                ret = attoHTTPParseURLParam(name, name_len, value, value_len);
+            } else {
+                ret = attoHTTPParseJSONParam(name, name_len, value, value_len);
+            }
             break;
         default:
             break;

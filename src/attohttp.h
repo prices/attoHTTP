@@ -146,10 +146,11 @@ typedef enum
     TEXT_HTML = 1,
     TEXT_PLAIN = 2,
     TEXT_CSS = 3,
-    APPLICATION_JAVASCRIPT = 4
+    APPLICATION_JAVASCRIPT = 4,
+    APPLICATION_XWWWFORMURLENCODED = 5
 
 } mimetypes_t;
-#define ATTOHTTP_MIME_TYPES 5
+#define ATTOHTTP_MIME_TYPES 6
 
 typedef returncode_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl);
 
