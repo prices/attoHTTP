@@ -76,6 +76,7 @@ uint8_t _attoHTTP_url[ATTOHTTP_URL_BUFFER_SIZE];
 int16_t _attoHTTP_extra_c;
 uint8_t *_attoHTTP_body;
 uint8_t *_attoHTTP_url_params;
+uint16_t _attoHTTP_url_params_start;
 uint16_t _attoHTTP_url_len;
 uint16_t _attoHTTP_body_len;
 void *_attoHTTP_read;
@@ -128,6 +129,7 @@ attoHTTPInitRun(void)
     _attoHTTP_returnCode = OK;
     _attoHTTP_extra_c = -1;
     _attoHTTP_url_params = NULL;
+    _attoHTTP_url_params_start = ATTOHTTP_URL_BUFFER_SIZE;
     _attoHTTP_accept = TEXT_HTML;
     _attoHTTP_contenttype = TEXT_HTML;
     _attoHTTP_contentlength = 0;
@@ -280,6 +282,7 @@ attoHTTPParseURI()
                 if (_attoHTTP_url[_attoHTTP_url_len] == '?') {
                     _attoHTTP_url[_attoHTTP_url_len] = 0;
                     _attoHTTP_url_params = &_attoHTTP_url[_attoHTTP_url_len + 1];
+                    _attoHTTP_url_params_start = _attoHTTP_url_len + 1;
                 }
                 _attoHTTP_url_len++;
             }
@@ -615,6 +618,92 @@ attoHTTPDefaultREST(attoHTTPDefAPICallback Callback)
     if (_attoHTTPDefaultCallback == NULL) {
         _attoHTTPDefaultCallback = Callback;
         ret = 1;
+    }
+    return ret;
+}
+/**
+ * @brief This retrieves the next parameter.
+ *
+ * @param name      The buffer to put the name into
+ * @param name_len  The length of the name buffer
+ * @param value     The buffer to put the value into
+ * @param value_len The length of the value buffer
+ *
+ * @return 1 on success, 0 on no
+ */
+uint8_t
+attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
+{
+    char c;
+    uint8_t ret;
+    do {
+        if (_attoHTTPMethod == GET) {
+            c = *_attoHTTP_url_params;
+        } else {
+            ret = attoHTTPReadC((uint8_t *)&c);
+            if (ret == 0) {
+                break;
+            }
+        }
+        if (c != 0) {
+            _attoHTTP_url_params++;
+            if (c == '=') {
+                name_len = 0;
+            } else if ((c == '&') || isspace(c)) {
+                break;
+            } else if (name_len > 0) {
+                *name++ = c;
+                name_len--;
+            } else {
+                *value++ = c;
+                value_len--;
+            }
+        } else {
+            break;
+        }
+    } while ((value_len > 0) && (_attoHTTP_url_params_start++ < ATTOHTTP_URL_BUFFER_SIZE));
+    // Make sure there is a trailing \0
+    *value= 0;
+    *name = 0;
+
+    return c == 0;
+
+}
+/**
+ * @brief This retrieves the next parameter.
+ *
+ * This function will get the next param from a location based on the
+ * method.
+ *
+ * - `GET`    - Reads the params from the url
+ * - `POST`   - Reads the params as a url encoded string from the body
+ * - `PUT`    - Reads the params as a JSON encoded string from the body
+ * - `PATCH`  - Reads the params as a JSON encoded string from the body
+ * - `DELETE` - Reads the params as a JSON encoded string from the body
+ *
+ * @param name      The buffer to put the name into
+ * @param name_len  The length of the name buffer
+ * @param value     The buffer to put the value into
+ * @param value_len The length of the value buffer
+ *
+ * @return 1 on success, 0 on failure
+ */
+uint8_t
+attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
+{
+    uint8_t ret = 0;
+    switch (_attoHTTPMethod) {
+        case GET:
+            ret = attoHTTPParseURLParam(name, name_len, value, value_len);
+            break;
+        case POST:
+            break;
+        case PUT:
+        case PATCH:
+        case DELETE:
+            break;
+        default:
+            break;
     }
     return ret;
 }

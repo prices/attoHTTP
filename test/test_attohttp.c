@@ -1,5 +1,5 @@
 /**
- * @file    src/attohttp.c
+ * @file    test/test_attohttp.c
  * @author  Scott L. Price <prices@dflytech.com>
  * @note    (C) 2015  Scott L. Price
  * @brief   A small http server for embedded systems

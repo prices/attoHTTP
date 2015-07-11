@@ -191,6 +191,7 @@ uint16_t attoHTTPprint(const char *buffer);
 uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
 uint16_t attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers);
 uint16_t attoHTTPFirstLine(uint16_t code);
+uint8_t attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len);
 
 #ifdef __cplusplus
 }

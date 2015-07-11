@@ -1,5 +1,5 @@
 /**
- * @file    src/attohttp.c
+ * @file    test/test.c
  * @author  Scott L. Price <prices@dflytech.com>
  * @note    (C) 2015  Scott L. Price
  * @brief   A small http server for embedded systems
@@ -38,6 +38,7 @@ FCT_BGN()
 {
     FCTMF_SUITE_CALL(test_attohttp);
     FCTMF_SUITE_CALL(test_attohttpAPI);
+    FCTMF_SUITE_CALL(test_attohttpParams);
 }
 FCT_END();
 
