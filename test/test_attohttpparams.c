@@ -198,7 +198,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
      *
      * @return void
      */
-    FCT_TEST_BGN(testPOSTParamsGoodJSON) {
+    FCT_TEST_BGN(testPOSTParamsObjectGoodJSON) {
         returncode_t ret;
 
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
@@ -230,7 +230,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
      *
      * @return void
      */
-    FCT_TEST_BGN(testPOSTParamsWithSubArray) {
+    FCT_TEST_BGN(testPOSTParamsObjectWithSubArray) {
         returncode_t ret;
 
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
@@ -263,7 +263,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
      *
      * @return void
      */
-    FCT_TEST_BGN(testPOSTParamsWithSubObject) {
+    FCT_TEST_BGN(testPOSTParamsObjectWithSubObject) {
         returncode_t ret;
 
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
@@ -285,6 +285,154 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
         attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
         ret = attoHTTPExecute(
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n { 'hello': 1, \"good bye\": { 'here': 'And', \"There\": \" a\" } }",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testPOSTParamsArrayGoodJSON) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            char name[40];
+            char value[40];
+
+            attoHTTPParseParam(name, 40, value, 40);
+            fct_chk_eq_str("0", name);
+            fct_chk_eq_str("hello", value);
+            attoHTTPParseParam(name, 40, value, 40);
+            fct_chk_eq_str("1", name);
+            fct_chk_eq_str("hereAndThere", value);
+
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n[ 'hello', \"hereAndThere\" ]",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testPOSTParamsStringSQGoodJSON) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            char name[40];
+            char value[40];
+
+            attoHTTPParseParam(name, 40, value, 40);
+            fct_chk_eq_str("0", name);
+            fct_chk_eq_str("hello there", value);
+
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n'hello there'",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testPOSTParamsStringDQGoodJSON) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            char name[40];
+            char value[40];
+
+            attoHTTPParseParam(name, 40, value, 40);
+            fct_chk_eq_str("0", name);
+            fct_chk_eq_str("hello there", value);
+
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n\"hello there\"",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testPOSTParamsIntegerGoodJSON) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            char name[40];
+            char value[40];
+
+            attoHTTPParseParam(name, 40, value, 40);
+            fct_chk_eq_str("0", name);
+            fct_chk_eq_str("123456", value);
+
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n123456",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testPOSTParamsFloatGoodJSON) {
+        returncode_t ret;
+
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            char name[40];
+            char value[40];
+
+            attoHTTPParseParam(name, 40, value, 40);
+            fct_chk_eq_str("0", name);
+            fct_chk_eq_str("1.23456", value);
+
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n1.23456",
                               (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");

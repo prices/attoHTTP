@@ -94,6 +94,9 @@ attoHTTPPage_t _attoHTTPDefaultPage;
 attoHTTPDefAPICallback _attoHTTPDefaultCallback;
 
 uint8_t _attoHTTPParseJSONParam_cblevel;
+uint8_t _attoHTTPParseJSONParam_sblevel;
+uint8_t _attoHTTPParseJSONParam_baselevel;
+uint8_t _attoHTTPParseJSONParam_counter;
 
 /** This is a map of our mime types */
 static const uint8_t *_mimetypes[] = {
@@ -138,6 +141,9 @@ attoHTTPInitRun(void)
     _attoHTTP_contenttype = TEXT_HTML;
     _attoHTTP_contentlength = 0;
     _attoHTTPParseJSONParam_cblevel = 0;
+    _attoHTTPParseJSONParam_sblevel = 0;
+    _attoHTTPParseJSONParam_baselevel = 0;
+    _attoHTTPParseJSONParam_counter = 0;
 
 }
 
@@ -659,41 +665,71 @@ uint8_t
 attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
 {
     char c;
+    char *n = name, *v = value;
+    uint8_t nl = name_len, vl = value_len;
     uint8_t ret;
-    uint8_t sblevel = 0;
     uint8_t sqlevel = 0;
     uint8_t dqlevel = 0;
+    uint8_t divider = 0;
     do {
         ret = attoHTTPReadC((uint8_t *)&c);
         if ((ret != 0) && (c != 0)) {
-            if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (sblevel == 0)) {
+            if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) {
                 name_len = 0;
-            } else if (isspace(c) && (sqlevel == 0) && (dqlevel == 0) && (_attoHTTPParseJSONParam_cblevel <= 1) && (sblevel == 0)) {
+                divider = c;
+            } else if (isspace(c) && (sqlevel == 0) && (dqlevel == 0)
+                && ((_attoHTTPParseJSONParam_cblevel + _attoHTTPParseJSONParam_sblevel) <= 1)
+            ) {
                 // Ignore space if it is not between quote marks
                 continue;
-            } else if ((c == ',') && (_attoHTTPParseJSONParam_cblevel == 1) && (sblevel == 0)) {
+            } else if ((c == ',')
+                && ((((_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == '{'))
+                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 1)) && (_attoHTTPParseJSONParam_baselevel == '[')))
+            ) {
                 break;
-            } else if ((c == '\'') && (_attoHTTPParseJSONParam_cblevel == 1) && (sblevel == 0)) {
+            } else if ((c == '\'')
+                && ((((_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == '{'))
+                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 1)) && (_attoHTTPParseJSONParam_baselevel == '['))
+                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == 0)))
+                ) {
                 if (sqlevel == 1) {
                     sqlevel = 0;
                 } else {
                     sqlevel = 1;
                 }
                 continue;
-            } else if ((c == '"') && (_attoHTTPParseJSONParam_cblevel == 1) && (sblevel == 0)) {
+            } else if ((c == '"')
+                && ((((_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == '{'))
+                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 1)) && (_attoHTTPParseJSONParam_baselevel == '['))
+                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == 0)))
+                ) {
                 if (dqlevel == 1) {
                     dqlevel = 0;
                 } else {
                     dqlevel = 1;
                 }
                 continue;
-            } else if ((c == '{') && (_attoHTTPParseJSONParam_cblevel == 0)) {
+            } else if ((c == '{') && (_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_baselevel == 0)) {
                 // Ignore the first one
                 _attoHTTPParseJSONParam_cblevel++;
+                if (_attoHTTPParseJSONParam_baselevel == 0) {
+                    _attoHTTPParseJSONParam_baselevel = c;
+                }
                 continue;
-            } else if ((c == '}') && (_attoHTTPParseJSONParam_cblevel == 1)) {
+            } else if ((c == '}') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_baselevel == '{')) {
                 // Ignore the first one
                 _attoHTTPParseJSONParam_cblevel--;
+                break;
+            } else if ((c == '[') && (_attoHTTPParseJSONParam_sblevel == 0) && (_attoHTTPParseJSONParam_baselevel == 0)) {
+                // Ignore the first one
+                _attoHTTPParseJSONParam_sblevel++;
+                if (_attoHTTPParseJSONParam_baselevel == 0) {
+                    _attoHTTPParseJSONParam_baselevel = c;
+                }
+                continue;
+            } else if ((c == ']') && (_attoHTTPParseJSONParam_sblevel == 1) && (_attoHTTPParseJSONParam_baselevel == '[')) {
+                // Ignore the first one
+                _attoHTTPParseJSONParam_sblevel--;
                 break;
             } else {
                 if (name_len > 0) {
@@ -713,11 +749,11 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
                     }
                 }
                 if (c == '[') {
-                    sblevel++;
+                    _attoHTTPParseJSONParam_sblevel++;
                 }
                 if (c == ']') {
-                    sblevel--;
-                    if (sblevel == 0) {
+                    _attoHTTPParseJSONParam_sblevel--;
+                    if (_attoHTTPParseJSONParam_sblevel == 1) {
                         break;
                     }
                 }
@@ -729,6 +765,10 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
     // Make sure there is a trailing \0
     *value= 0;
     *name = 0;
+    if ((divider == 0) && (n != name)) {
+        strncpy(v, n, vl);
+        snprintf(n, nl, "%d", _attoHTTPParseJSONParam_counter++);
+    }
 
     return c == 0;
 
