@@ -671,45 +671,34 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
     uint8_t sqlevel = 0;
     uint8_t dqlevel = 0;
     uint8_t divider = 0;
+    uint8_t level = 0;
     do {
         ret = attoHTTPReadC((uint8_t *)&c);
         if ((ret != 0) && (c != 0)) {
+            level = _attoHTTPParseJSONParam_cblevel + _attoHTTPParseJSONParam_sblevel;
             if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) {
                 name_len = 0;
                 divider = c;
-            } else if (isspace(c) && (sqlevel == 0) && (dqlevel == 0)
-                && ((_attoHTTPParseJSONParam_cblevel + _attoHTTPParseJSONParam_sblevel) <= 1)
-            ) {
+            } else if (isspace(c) && (sqlevel == 0) && (dqlevel == 0) && (level <= 1)) {
                 // Ignore space if it is not between quote marks
                 continue;
-            } else if ((c == ',')
-                && ((((_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == '{'))
-                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 1)) && (_attoHTTPParseJSONParam_baselevel == '[')))
-            ) {
+            } else if ((c == ',') && (level == 1)) {
                 break;
-            } else if ((c == '\'')
-                && ((((_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == '{'))
-                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 1)) && (_attoHTTPParseJSONParam_baselevel == '['))
-                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == 0)))
-                ) {
+            } else if ((c == '\'') && (level <= 1)) {
                 if (sqlevel == 1) {
                     sqlevel = 0;
                 } else {
                     sqlevel = 1;
                 }
                 continue;
-            } else if ((c == '"')
-                && ((((_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == '{'))
-                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 1)) && (_attoHTTPParseJSONParam_baselevel == '['))
-                || (((_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_sblevel == 0)) && (_attoHTTPParseJSONParam_baselevel == 0)))
-                ) {
+            } else if ((c == '"') && (level <= 1)) {
                 if (dqlevel == 1) {
                     dqlevel = 0;
                 } else {
                     dqlevel = 1;
                 }
                 continue;
-            } else if ((c == '{') && (_attoHTTPParseJSONParam_cblevel == 0) && (_attoHTTPParseJSONParam_baselevel == 0)) {
+            } else if ((c == '{') && (level == 0)) {
                 // Ignore the first one
                 _attoHTTPParseJSONParam_cblevel++;
                 if (_attoHTTPParseJSONParam_baselevel == 0) {
@@ -720,7 +709,7 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
                 // Ignore the first one
                 _attoHTTPParseJSONParam_cblevel--;
                 break;
-            } else if ((c == '[') && (_attoHTTPParseJSONParam_sblevel == 0) && (_attoHTTPParseJSONParam_baselevel == 0)) {
+            } else if ((c == '[') && (level == 0)) {
                 // Ignore the first one
                 _attoHTTPParseJSONParam_sblevel++;
                 if (_attoHTTPParseJSONParam_baselevel == 0) {
@@ -818,7 +807,7 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
                 if (c == '%') {
                     attoHTTPParseURLParamChar(&decode[0]);
                     attoHTTPParseURLParamChar(&decode[1]);
-                    decode[3] = 0;
+                    decode[2] = 0;
                     c = strtol(decode, NULL, 16);
                 }
                 if (name_len > 0) {
@@ -836,7 +825,6 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
     // Make sure there is a trailing \0
     *value= 0;
     *name = 0;
-
     return c == 0;
 
 }
