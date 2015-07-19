@@ -148,9 +148,11 @@ attoHTTPInitRun(void)
 }
 
 /**
- * @brief Finds one or more EOL
+ * @brief Reads a character in
  *
- * @return 1 if there is more to read, 0 if done reading
+ * @param c A pointer to the location to store the read character into
+ *
+ * @return 1 if a character was read, 0 if not
  */
 int8_t
 attoHTTPReadC(uint8_t *c)
@@ -170,9 +172,11 @@ attoHTTPReadC(uint8_t *c)
     return ret;
 }
 /**
- * @brief Finds one or more EOL
+ * @brief Writes a character out
  *
- * @return 1 if there is more to read, 0 if done reading
+ * @param c The character to write
+ *
+ * @return 1 if the byte was written, 0 if it was not
  */
 static inline int8_t
 attoHTTPWriteC(uint8_t c)
@@ -180,7 +184,7 @@ attoHTTPWriteC(uint8_t c)
     return attoHTTPSetByte(_attoHTTP_write, c);
 }
 /**
- * @brief Finds one or more EOL
+ * @brief Read characters until a non-space character is encountered.
  *
  * @return 1 if there is more to read, 0 if done reading
  */
@@ -223,12 +227,12 @@ attoHTTPParseEOL(void)
     return ret;
 }
 /**
- * @brief Finds the method, url, and HTTP version
+ * @brief Finds the HTTP method
  *
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
-attoHTTPParseMethod()
+attoHTTPParseMethod(void)
 {
     uint8_t ret = 1;
     uint8_t buffer[10];
@@ -271,12 +275,12 @@ attoHTTPParseMethod()
 
 }
 /**
- * @brief Finds the method, url, and HTTP version
+ * @brief Finds the url and stores it for later usage
  *
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
-attoHTTPParseURI()
+attoHTTPParseURI(void)
 {
     uint8_t ret;
     uint8_t c;
@@ -315,7 +319,7 @@ attoHTTPParseURI()
 
 }
 /**
- * @brief Finds the method, url, and HTTP version
+ * @brief Finds the HTTP version
  *
  * @return 1 if there is more to read, 0 if done reading
  */
@@ -353,7 +357,12 @@ attoHTTPParseVersion()
     return ret;
 }
 /**
- * @brief Finds the method, url, and HTTP version
+ * @brief Parses the next header
+ *
+ * @param name      The buffer to store the name in
+ * @param namesize  The size of the name buffer
+ * @param value     The buffer to store the value in
+ * @param valuesize The size of the value buffer
  *
  * @return 1 if there is more to read, 0 if done reading
  */
@@ -393,12 +402,12 @@ attoHTTPParseHeader(uint8_t *name, uint16_t namesize, uint8_t *value, uint16_t v
     return ret;
 }
 /**
- * @brief Finds the method, url, and HTTP version
+ * @brief Parses headers and saves inforamtion it needs out of them.
  *
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
-attoHTTPParseHeaders()
+attoHTTPParseHeaders(void)
 {
     int8_t ret = 1;
     uint8_t i;
@@ -427,9 +436,13 @@ attoHTTPParseHeaders()
 
 
 /**
- * @brief Finds the method, url, and HTTP version
+ * @brief Finds API callback
  *
- * @return 1 if there is more to read, 0 if done reading
+ * This function parses the URL into component parts, and feeds that to the
+ * callback function.  This allows it to figure out what it should do, based
+ * on the URL.
+ *
+ * @return 1 if a function was called, 0 otherwise
  */
 int8_t
 attoHTTPFindAPICallback(void)
@@ -448,6 +461,7 @@ attoHTTPFindAPICallback(void)
         Callback = _attoHTTPDefaultCallback;
     }
     if (Callback != NULL) {
+        ret = 1;
         // Init the buffers
         for (i = 0; i < ATTOHTTP_API_LEVELS; i++) {
             command[i] = NULL;
@@ -476,9 +490,12 @@ attoHTTPFindAPICallback(void)
     return ret;
 }
 /**
- * @brief Finds the method, url, and HTTP version
+ * @brief Finds the page associated with the URL.
  *
- * @return 1 if there is more to read, 0 if done reading
+ * If no pages are found, it will try to run an API callback function using
+ * attoHTTPFindAPICallback()
+ *
+ * @return 1 if a page was found (or function called), 0 otherwise.
  */
 int8_t
 attoHTTPFindPage(void)
