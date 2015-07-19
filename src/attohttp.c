@@ -93,12 +93,16 @@ attoHTTPPage_t _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
 attoHTTPPage_t _attoHTTPDefaultPage;
 attoHTTPDefAPICallback _attoHTTPDefaultCallback;
 
+/** @var The curly brace level we are at */
 uint8_t _attoHTTPParseJSONParam_cblevel;
+/** @var The square brace level we are at */
 uint8_t _attoHTTPParseJSONParam_sblevel;
+/** @var The level that we are at */
 uint8_t _attoHTTPParseJSONParam_baselevel;
+/** @var A counter for the JSON parser */
 uint8_t _attoHTTPParseJSONParam_counter;
 
-/** This is a map of our mime types */
+/** @var This is a map of our mime types */
 static const uint8_t *_mimetypes[] = {
     [APPLICATION_JSON] = (uint8_t *)"application/json",
     [TEXT_HTML] = (uint8_t *)"text/html",
