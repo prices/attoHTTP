@@ -70,27 +70,46 @@
  *                              Private Parameters
  * @cond dev
  ***************************************************************************/
+/** @var The HTTP method from the client */
 httpmethod_t _attoHTTPMethod;
+/** @var The HTTP version from the client */
 httpversion_t _attoHTTPVersion;
+/** @var Our URL buffer */
 uint8_t _attoHTTP_url[ATTOHTTP_URL_BUFFER_SIZE];
-// This needs to be bigger than a character to save a character + sign information
+/** @var The last character read that wasn't used by what read it
+ *
+ * This needs to be bigger than a character to save a character + sign information
+ */
 int16_t _attoHTTP_extra_c;
-uint8_t *_attoHTTP_body;
+/** @var Pointer to the start of the parameters in the URL */
 uint8_t *_attoHTTP_url_params;
+/** @var The length into the string where the params start */
 uint16_t _attoHTTP_url_params_start;
+/** @var The length of the URL */
 uint16_t _attoHTTP_url_len;
-uint16_t _attoHTTP_body_len;
+/** @var Pointer to our read parameter */
 void *_attoHTTP_read;
+/** @var Pointer to our write parameter */
 void *_attoHTTP_write;
+/** @var Flag to say that we are done receiving headers */
 uint8_t _attoHTTP_headersDone;
+/** @var Flag to say that our headers are sent */
 uint8_t _attoHTTP_headersSent;
+/** @var Flag to say the first line of our return has been sent */
 uint8_t _attoHTTP_firstlineSent;
+/** @var The return code to send the client */
 returncode_t _attoHTTP_returnCode;
+/** @var These are what the client said they wanted for mime-type in the return */
 uint16_t _attoHTTP_accept;
+/** @var Incoming content type */
 mimetypes_t _attoHTTP_contenttype;
+/** @var Incoming content length */
 uint32_t _attoHTTP_contentlength;
+/** @var Our different pages are stored here */
 attoHTTPPage_t _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
+/** @var The default HTTP page is stored here */
 attoHTTPPage_t _attoHTTPDefaultPage;
+/** @var The default API callback function is stored here */
 attoHTTPDefAPICallback _attoHTTPDefaultCallback;
 
 /** @var The curly brace level we are at */
@@ -131,9 +150,7 @@ attoHTTPInitRun(void)
 {
     _attoHTTPMethod = NOTSUPPORTED;
     _attoHTTPVersion = VUNKNOWN;
-    _attoHTTP_body = NULL;
     _attoHTTP_url_len = 0;
-    _attoHTTP_body_len = 0;
     _attoHTTP_headersDone = 0;
     _attoHTTP_headersSent = 0;
     _attoHTTP_firstlineSent = 0;
