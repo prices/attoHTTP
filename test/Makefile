@@ -3,7 +3,7 @@ BASEDIR:=../
 
 TEST_OBJECTS:=test.o attohttp.o test_attohttp.o test_attohttpAPI.o test_attohttpparams.o
 
-HEADER_FILES:=test.h
+HEADER_FILES:=test.h $(BASEDIR)src/attohttp.h
 TEST_TARGET:=attohttp
 TEST_NAME:=
 
@@ -13,7 +13,7 @@ TEST_NAME:=
 CFLAGS_TARGET+=-fprofile-arcs -ftest-coverage -Wall -Werror -pedantic -std=c11
 CFLAGS+=-D_TEST_ \
 	-I$(shell pwd) \
-	-I$(BASEDIR)/src \
+	-I$(BASEDIR)src \
 	-Wno-pointer-to-int-cast
 CFLAGS_TEST+= -Wall -Werror -std=gnu11
 LDFLAGS+=
