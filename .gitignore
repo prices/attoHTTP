@@ -32,6 +32,7 @@
 *.dSYM/
 
 docs
+devdocs
 build
 
 .kdev4
