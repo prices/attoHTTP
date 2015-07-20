@@ -536,6 +536,7 @@ _attoHTTPFindPage(void)
     }
     if (page != NULL) {
         if (_attoHTTPMethod == GET) {
+            _attoHTTP_returnCode = OK;
             _attoHTTP_contenttype = page->type;
             _attoHTTP_contentlength = page->size;
             attoHTTPSendHeaders();
@@ -972,7 +973,7 @@ attoHTTPSendHeaders(void)
 {
     uint16_t chars = 0;
     if (_attoHTTP_firstlineSent == 0) {
-        attoHTTPOK();
+        attoHTTPFirstLine(_attoHTTP_returnCode);
     }
     if (_attoHTTP_headersSent == 0) {
         chars += attoHTTPprintf("Content-Type: %s" HTTPEOL, _mimetypes[_attoHTTP_contenttype]);

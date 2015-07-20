@@ -200,68 +200,6 @@ uint8_t attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t va
 /***********************************************************************
  *                   Inline Functions
  ***********************************************************************/
-/**
- * @brief This prints out the OK message
- *
- * @return The number of characters printed
- */
-static inline uint8_t
-attoHTTPOK()
-{
-
-    return attoHTTPFirstLine(200);
-
-}
-/**
- * @brief This prints out the Accepted message
- *
- * @return The number of characters printed
- */
-static inline uint8_t
-attoHTTPAccepted()
-{
-    return attoHTTPFirstLine(202);
-}
-/**
- * @brief This prints out the Bad Request Message
- *
- * @return The number of characters printed
- */
-static inline uint8_t
-attoHTTPBadRequest()
-{
-    return attoHTTPFirstLine(400);
-}
-/**
- * @brief This prints out the Not Found Message
- *
- * @return The number of characters printed
- */
-static inline uint8_t
-attoHTTPNotFound()
-{
-    return attoHTTPFirstLine(404);
-}
-/**
- * @brief This prints out the Internal Error message
- *
- * @return The number of characters printed
- */
-static inline uint8_t
-attoHTTPInternalError()
-{
-    return attoHTTPFirstLine(500);
-}
-/**
- * @brief This prints out the Not Impelemented message
- *
- * @return The number of characters printed
- */
-static inline uint8_t
-attoHTTPNotImplemented()
-{
-    return attoHTTPFirstLine(501);
-}
 
 
 #define __ATTOHTTP_H_DONE__
