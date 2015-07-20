@@ -100,12 +100,11 @@
  */
 typedef enum
 {
-    OK,
-    UNSUPPORTED,
-    BADREQUEST,
-    INTERNAL_ERROR,
-    NOT_IMPLEMENTED,
-    NOT_FOUND
+    OK = 200,
+    UNSUPPORTED = 501,
+    BADREQUEST = 400,
+    INTERNAL_ERROR = 500,
+    NOT_FOUND = 404
 } returncode_t;
 
 /**

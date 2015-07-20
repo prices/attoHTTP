@@ -1016,6 +1016,10 @@ attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers)
 /**
  * @brief Initiialized the variables
  *
+ * This function should be called once when the code using attoHTTP is being
+ * set up.  This makes sure that everything is in a known state when it starts
+ * running.
+ *
  * @return none
  */
 void
@@ -1038,8 +1042,10 @@ attoHTTPInit(void)
 /**
  * @brief Main function that runs everything
  *
- * This function sets up the server.  It should be called once per session,
- * with extra being whatever key is needed to access the server
+ * This function serves a single TCP connection.
+ *
+ * This will process one connection, start to finish, when it is run.
+ * It should only be called if there is a connection to deal with.
  *
  * @param read This will be sent as the first argument to the get
  *             data functions.  It could be anything.
@@ -1079,22 +1085,7 @@ attoHTTPExecute(void *read, void *write)
             // Not found in the find page, so check the RESTful stuff
         }
     }
-    switch (_attoHTTP_returnCode) {
-        case OK:
-            break;
-        case UNSUPPORTED:
-            attoHTTPNotImplemented();
-            break;
-        case NOT_FOUND:
-            attoHTTPNotFound();
-            break;
-        case BADREQUEST:
-            attoHTTPBadRequest();
-            break;
-        default:
-            attoHTTPInternalError();
-            break;
-    }
+    attoHTTPFirstLine(_attoHTTP_returnCode);
 #ifdef __DEBUG__
     printf("Return Code %d" HTTPEOL, _attoHTTP_returnCode);
 #endif
