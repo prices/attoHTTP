@@ -146,7 +146,7 @@ static const uint8_t *_mimetypes[] = {
  * @return none
  */
 static inline void
-attoHTTPInitRun(void)
+_attoHTTPInitRun(void)
 {
     _attoHTTPMethod = NOTSUPPORTED;
     _attoHTTPVersion = VUNKNOWN;
@@ -176,7 +176,7 @@ attoHTTPInitRun(void)
  * @return 1 if a character was read, 0 if not
  */
 int8_t
-attoHTTPReadC(uint8_t *c)
+_attoHTTPReadC(uint8_t *c)
 {
     int8_t ret = 1;
     if (_attoHTTP_extra_c > 0) {
@@ -200,7 +200,7 @@ attoHTTPReadC(uint8_t *c)
  * @return 1 if the byte was written, 0 if it was not
  */
 static inline int8_t
-attoHTTPWriteC(uint8_t c)
+_attoHTTPWriteC(uint8_t c)
 {
     return attoHTTPSetByte(_attoHTTP_write, c);
 }
@@ -210,12 +210,12 @@ attoHTTPWriteC(uint8_t c)
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
-attoHTTPParseSpace(void)
+_attoHTTPParseSpace(void)
 {
     int8_t ret;
     uint8_t c;
     do {
-        ret = attoHTTPReadC(&c);
+        ret = _attoHTTPReadC(&c);
     } while (isblank(c) && (ret != 0));
     _attoHTTPPushC(c);
     return ret;
@@ -229,14 +229,14 @@ attoHTTPParseSpace(void)
  * @return 1 if there is more to read, 0 if done reading
  */
 int8_t
-attoHTTPParseEOL(void)
+_attoHTTPParseEOL(void)
 {
     uint8_t ret = 1;
     uint8_t c;
     int8_t eolCount = 0;
     // Remove any extra space
     do {
-        ret = attoHTTPReadC(&c);
+        ret = _attoHTTPReadC(&c);
         if (c == '\n') {
             eolCount++;
         }
@@ -252,20 +252,20 @@ attoHTTPParseEOL(void)
  *
  * @return 1 if there is more to read, 0 if done reading
  */
-int8_t
-attoHTTPParseMethod(void)
+static inline int8_t
+_attoHTTPParseMethod(void)
 {
     uint8_t ret = 1;
     uint8_t buffer[10];
     uint16_t ptr;
     _attoHTTP_extra_c = -1;
     // Remove any extra space
-    ret = attoHTTPParseSpace();
+    ret = _attoHTTPParseSpace();
 
     if (ret) {
         ptr = 0;
         do {
-            ret = attoHTTPReadC(&buffer[ptr]);
+            ret = _attoHTTPReadC(&buffer[ptr]);
             if (isblank(buffer[ptr])) {
                 break;
             } else {
@@ -300,18 +300,18 @@ attoHTTPParseMethod(void)
  *
  * @return 1 if there is more to read, 0 if done reading
  */
-int8_t
-attoHTTPParseURI(void)
+static inline int8_t
+_attoHTTPParseURL(void)
 {
     uint8_t ret;
     uint8_t c;
     // Remove any extra space
-    ret = attoHTTPParseSpace();
+    ret = _attoHTTPParseSpace();
 
     if (ret) {
         _attoHTTP_url_len = 0;
         do {
-            ret = attoHTTPReadC(&_attoHTTP_url[_attoHTTP_url_len]);
+            ret = _attoHTTPReadC(&_attoHTTP_url[_attoHTTP_url_len]);
             if (isblank(_attoHTTP_url[_attoHTTP_url_len])) {
                 break;
             } else {
@@ -327,7 +327,7 @@ attoHTTPParseURI(void)
         // We are not done with the URL
         c = _attoHTTP_url[_attoHTTP_url_len];
         while (ret && !isblank(c)) {
-            ret = attoHTTPReadC(&c);
+            ret = _attoHTTPReadC(&c);
         }
         _attoHTTPPushC(c);
         _attoHTTP_url[_attoHTTP_url_len] = 0;
@@ -344,19 +344,19 @@ attoHTTPParseURI(void)
  *
  * @return 1 if there is more to read, 0 if done reading
  */
-int8_t
-attoHTTPParseVersion()
+static inline int8_t
+_attoHTTPParseVersion()
 {
     uint8_t ret;
     uint8_t buffer[10];
     uint16_t ptr;
     // Remove any extra space
-    ret = attoHTTPParseSpace();
+    ret = _attoHTTPParseSpace();
 
     if (ret) {
         ptr = 0;
         do {
-            ret = attoHTTPReadC(&buffer[ptr]);
+            ret = _attoHTTPReadC(&buffer[ptr]);
             if (isspace(buffer[ptr])) {
                 break;
             } else {
@@ -373,7 +373,7 @@ attoHTTPParseVersion()
         }
     }
 
-    ret = attoHTTPParseEOL();
+    ret = _attoHTTPParseEOL();
 
     return ret;
 }
@@ -387,13 +387,13 @@ attoHTTPParseVersion()
  *
  * @return 1 if there is more to read, 0 if done reading
  */
-int8_t
-attoHTTPParseHeader(uint8_t *name, uint16_t namesize, uint8_t *value, uint16_t valuesize)
+static inline int8_t
+_attoHTTPParseHeader(uint8_t *name, uint16_t namesize, uint8_t *value, uint16_t valuesize)
 {
     uint8_t ret;
     namesize--; // Account for the termination character
     do {
-        ret = attoHTTPReadC(name);
+        ret = _attoHTTPReadC(name);
         if (*name == ':') {
             break;
         } else {
@@ -403,11 +403,11 @@ attoHTTPParseHeader(uint8_t *name, uint16_t namesize, uint8_t *value, uint16_t v
     } while ((ret > 0) && (namesize > 0));
     *name = 0; // Terminate the string
 
-    ret = attoHTTPParseSpace();
+    ret = _attoHTTPParseSpace();
 
     valuesize--; // Account for the termination character
     do {
-        ret = attoHTTPReadC(value);
+        ret = _attoHTTPReadC(value);
         if ((*value == '\r') || (*value == '\n')) {
             break;
         } else {
@@ -419,7 +419,7 @@ attoHTTPParseHeader(uint8_t *name, uint16_t namesize, uint8_t *value, uint16_t v
         _attoHTTPPushC(*value);
     }
     *value = 0;  // Terminate the string
-    ret = attoHTTPParseEOL();
+    ret = _attoHTTPParseEOL();
     return ret;
 }
 /**
@@ -427,8 +427,8 @@ attoHTTPParseHeader(uint8_t *name, uint16_t namesize, uint8_t *value, uint16_t v
  *
  * @return 1 if there is more to read, 0 if done reading
  */
-int8_t
-attoHTTPParseHeaders(void)
+static inline int8_t
+_attoHTTPParseHeaders(void)
 {
     int8_t ret = 1;
     uint8_t i;
@@ -436,7 +436,7 @@ attoHTTPParseHeaders(void)
     uint8_t value[ATTOHTTP_HEADER_VALUE_SIZE];
 
     while ((_attoHTTP_headersDone == 0) && (ret != 0)) {
-        ret = attoHTTPParseHeader(name, sizeof(name), value, sizeof(value));
+        ret = _attoHTTPParseHeader(name, sizeof(name), value, sizeof(value));
         if (strncasecmp((char *)name, "accept", sizeof(name)) == 0) {
             for (i = 0; i < ATTOHTTP_MIME_TYPES; i++) {
                 if (strncasecmp((char *)value, (char *)_mimetypes[i], sizeof(value)) == 0) {
@@ -465,8 +465,8 @@ attoHTTPParseHeaders(void)
  *
  * @return 1 if a function was called, 0 otherwise
  */
-int8_t
-attoHTTPFindAPICallback(void)
+static inline int8_t
+_attoHTTPFindAPICallback(void)
 {
     int8_t ret = 0;
     attoHTTPDefAPICallback Callback = NULL;
@@ -514,12 +514,12 @@ attoHTTPFindAPICallback(void)
  * @brief Finds the page associated with the URL.
  *
  * If no pages are found, it will try to run an API callback function using
- * attoHTTPFindAPICallback()
+ * _attoHTTPFindAPICallback()
  *
  * @return 1 if a page was found (or function called), 0 otherwise.
  */
-int8_t
-attoHTTPFindPage(void)
+static inline int8_t
+_attoHTTPFindPage(void)
 {
     int8_t ret = 0;
     uint8_t i;
@@ -548,7 +548,7 @@ attoHTTPFindPage(void)
     }
 
     if (ret == 0) {
-        ret = attoHTTPFindAPICallback();
+        ret = _attoHTTPFindAPICallback();
     }
     return ret;
 }
@@ -563,7 +563,7 @@ attoHTTPFindPage(void)
  * @return The number of characters retrieved.
  */
 uint8_t
-attoHTTPParseURLParamChar(char *c)
+_attoHTTPParseURLParamChar(char *c)
 {
     uint8_t ret = 0;
     if (_attoHTTPMethod == GET) {
@@ -575,7 +575,7 @@ attoHTTPParseURLParamChar(char *c)
     } else {
         // Take up any space characters in the body.
         do {
-            ret = attoHTTPReadC((uint8_t *)c);
+            ret = _attoHTTPReadC((uint8_t *)c);
         } while ((ret == 1) && (isspace(*c) || (*c == '?')));
     }
     return ret;
@@ -600,7 +600,7 @@ attoHTTPwrite(const uint8_t *buffer, uint16_t len)
     while (len-- > 0) {
         c = *buffer++;
         // This makes sure that what we are sending out is UTF-8 compatible.
-        ret += attoHTTPWriteC(c);
+        ret += _attoHTTPWriteC(c);
     }
     return ret;
 }
@@ -711,7 +711,7 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
     uint8_t divider = 0;
     uint8_t level = 0;
     do {
-        ret = attoHTTPReadC((uint8_t *)&c);
+        ret = _attoHTTPReadC((uint8_t *)&c);
         if ((ret != 0) && (c != 0)) {
             level = _attoHTTPParseJSONParam_cblevel + _attoHTTPParseJSONParam_sblevel;
             if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) {
@@ -834,7 +834,7 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
     char decode[3];
     uint8_t ret;
     do {
-        ret = attoHTTPParseURLParamChar(&c);
+        ret = _attoHTTPParseURLParamChar(&c);
         if ((ret != 0) && (c != 0)) {
             if (c == '=') {
                 name_len = 0;
@@ -843,8 +843,8 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
             } else {
                 // This decodes the URL
                 if (c == '%') {
-                    attoHTTPParseURLParamChar(&decode[0]);
-                    attoHTTPParseURLParamChar(&decode[1]);
+                    _attoHTTPParseURLParamChar(&decode[0]);
+                    _attoHTTPParseURLParamChar(&decode[1]);
                     decode[2] = 0;
                     c = strtol(decode, NULL, 16);
                 }
@@ -1058,21 +1058,21 @@ attoHTTPExecute(void *read, void *write)
     _attoHTTP_write = write;
 
     // Init all of the variables.
-    attoHTTPInitRun();
+    _attoHTTPInitRun();
     // Parse the first line
-    attoHTTPParseMethod();
+    _attoHTTPParseMethod();
 
     if (_attoHTTP_returnCode == OK) {
-        attoHTTPParseURI();
-        attoHTTPParseVersion();
+        _attoHTTPParseURL();
+        _attoHTTPParseVersion();
     }
     if (_attoHTTP_returnCode == OK) {
-        attoHTTPParseHeaders();
+        _attoHTTPParseHeaders();
     }
     if (_attoHTTP_returnCode == OK) {
         _attoHTTP_returnCode = NOT_FOUND;
 
-        ret = attoHTTPFindPage();
+        ret = _attoHTTPFindPage();
         if (ret > 0) {
             _attoHTTP_returnCode = OK;
         } else if (ret == 0) {
