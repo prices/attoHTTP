@@ -38,29 +38,6 @@
 #include <ctype.h>
 #include "attohttp.h"
 
-#ifndef ATTOHTTP_PRINTF_BUFFER_SIZE
-# define ATTOHTTP_PRINTF_BUFFER_SIZE 128
-#endif
-#ifndef ATTOHTTP_URL_BUFFER_SIZE
-# define ATTOHTTP_URL_BUFFER_SIZE 64
-#endif
-#ifndef ATTOHTTP_HEADER_NAME_SIZE
-# define ATTOHTTP_HEADER_NAME_SIZE 32
-#endif
-#ifndef ATTOHTTP_HEADER_VALUE_SIZE
-# define ATTOHTTP_HEADER_VALUE_SIZE 64
-#endif
-#ifndef ATTOHTTP_PAGE_BUFFERS
-# define ATTOHTTP_PAGE_BUFFERS 8
-#endif
-#ifndef ATTOHTTP_API_BUFFERS
-# define ATTOHTTP_API_BUFFERS 8
-#endif
-#ifndef ATTOHTTP_API_LEVELS
-# define ATTOHTTP_API_LEVELS 3
-#endif
-
-
 #define _attoHTTPCheckPage(page)  (!_attoHTTPPageEmpty(page) && (0 == strncmp((char *)_attoHTTP_url, (char *)page.url, sizeof(page.url))))
 #define _attoHTTPDefaultPage() (!_attoHTTPPageEmpty(_attoHTTPDefaultPage) && (strncmp((char *)_attoHTTP_url, "/", sizeof(_attoHTTP_url)) == 0) && (_attoHTTP_url_len == 1))
 #define _attoHTTPPushC(char) _attoHTTP_extra_c = char
@@ -111,6 +88,8 @@ attoHTTPPage_t _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
 attoHTTPPage_t _attoHTTPDefaultPage;
 /** @var The default API callback function is stored here */
 attoHTTPDefAPICallback _attoHTTPDefaultCallback;
+/** @var The callback buffer for the API */
+attoHTTPAPI_t _attoHTTPAPICallbacks[ATTOHTTP_API_BUFFERS];
 
 /** @var The curly brace level we are at */
 uint8_t _attoHTTPParseJSONParam_cblevel;
@@ -469,44 +448,60 @@ static inline int8_t
 _attoHTTPFindAPICallback(void)
 {
     int8_t ret = 0;
-    attoHTTPDefAPICallback Callback = NULL;
+    attoHTTPAPICallback Callback = NULL;
     uint8_t *command[ATTOHTTP_API_LEVELS];
     uint8_t *id[ATTOHTTP_API_LEVELS];
-    uint8_t i;
+    uint8_t i, j;
     uint8_t *url_ptr = _attoHTTP_url;
     uint16_t ctr = _attoHTTP_url_len;
     uint8_t cmdlvl = 0;
     uint8_t idlvl = 0;
+    // Init the buffers
+    for (i = 0; i < ATTOHTTP_API_LEVELS; i++) {
+        command[i] = NULL;
+        id[i] = NULL;
+    }
+    // Parse the URL
+    while ((*url_ptr != 0) && (ctr > 0)) {
+        if (*url_ptr == '/') {
+            if ((cmdlvl == idlvl) && (cmdlvl < ATTOHTTP_API_LEVELS)) {
+                command[cmdlvl] = url_ptr + 1;
+                cmdlvl++;
+            } else if ((cmdlvl > idlvl) && (idlvl < ATTOHTTP_API_LEVELS)) {
+                // Don't get a level if there is nothing after the slash.
+                if (ctr > 1) {
+                    id[idlvl] = url_ptr + 1;
+                    idlvl++;
+                }
+            }
+            *url_ptr = 0;
+        }
+        url_ptr++;
+        ctr--;
+    }
     // Find the Callback
-    if (_attoHTTPDefaultCallback != NULL) {
-        Callback = _attoHTTPDefaultCallback;
+    for (i = 0; i < ATTOHTTP_API_BUFFERS; i++) {
+        if (_attoHTTPAPICallbacks[i].Callback != NULL) {
+            if (cmdlvl > _attoHTTPAPICallbacks[i].level) {
+                continue;
+            }
+            for (j = 0; j < cmdlvl; j++) {
+                if (strncmp((char *)_attoHTTPAPICallbacks[i].commands[j], (char *)command[j], sizeof(_attoHTTPAPICallbacks[i].commands[j]))) {
+                    break;
+                }
+            }
+            if (j == cmdlvl) {
+                Callback = _attoHTTPAPICallbacks[i].Callback;
+            }
+            break;
+        }
     }
     if (Callback != NULL) {
         ret = 1;
-        // Init the buffers
-        for (i = 0; i < ATTOHTTP_API_LEVELS; i++) {
-            command[i] = NULL;
-            id[i] = NULL;
-        }
-        // Parse the URL
-        while ((*url_ptr != 0) && (ctr > 0)) {
-            if (*url_ptr == '/') {
-                if ((cmdlvl == idlvl) && (cmdlvl < ATTOHTTP_API_LEVELS)) {
-                    command[cmdlvl] = url_ptr + 1;
-                    cmdlvl++;
-                } else if ((cmdlvl > idlvl) && (idlvl < ATTOHTTP_API_LEVELS)) {
-                    // Don't get a level if there is nothing after the slash.
-                    if (ctr > 1) {
-                        id[idlvl] = url_ptr + 1;
-                        idlvl++;
-                    }
-                }
-                *url_ptr = 0;
-            }
-            url_ptr++;
-            ctr--;
-        }
-        _attoHTTP_returnCode = Callback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
+        _attoHTTP_returnCode = Callback(_attoHTTPMethod, _attoHTTP_accept, id, idlvl);
+    } else if (_attoHTTPDefaultCallback != NULL) {
+        ret = 1;
+        _attoHTTP_returnCode = _attoHTTPDefaultCallback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
     }
     return ret;
 }
@@ -822,6 +817,33 @@ attoHTTPDefaultREST(attoHTTPDefAPICallback Callback)
     return ret;
 }
 /**
+ * @brief This adds a page to the buffer at the given URL
+ *
+ * @param Callback The callback function to use.
+ *
+ * @return 1 on success, 0 on failure
+ */
+uint8_t
+attoHTTPRESTCallback(attoHTTPAPICallback Callback, const char **commands, uint8_t level)
+{
+    uint8_t ret = 0, i, j;
+    for (i = 0; i < ATTOHTTP_API_BUFFERS; i++) {
+        if (_attoHTTPAPICallbacks[i].Callback == NULL) {
+            _attoHTTPAPICallbacks[i].Callback = Callback;
+            if (level > ATTOHTTP_API_LEVELS) {
+                level = ATTOHTTP_API_LEVELS;
+            }
+            for (j = 0; j < level; j++) {
+                strncpy((char *)_attoHTTPAPICallbacks[i].commands[j], (char *)commands[j], sizeof(_attoHTTPAPICallbacks[i].commands[j]));
+            }
+            _attoHTTPAPICallbacks[i].level = level;
+            ret = 1;
+            break;
+        }
+    }
+    return ret;
+}
+/**
  * @brief This retrieves the next parameter in a URL string
  *
  * @param name      The buffer to put the name into
@@ -1029,7 +1051,7 @@ attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers)
 void
 attoHTTPInit(void)
 {
-    uint8_t i;
+    uint8_t i, j;
     _attoHTTPDefaultPage.url[0] = 0;
     _attoHTTPDefaultPage.content = NULL;
     _attoHTTPDefaultPage.size = 0;
@@ -1040,6 +1062,13 @@ attoHTTPInit(void)
         _attoHTTPPages[i].content = NULL;
         _attoHTTPPages[i].size = 0;
         _attoHTTPPages[i].type = TEXT_HTML;
+    }
+    for (i = 0; i < ATTOHTTP_API_BUFFERS; i++) {
+        for (j = 0; j < ATTOHTTP_API_LEVELS; j++) {
+            _attoHTTPAPICallbacks[i].commands[j][0] = 0;
+        }
+        _attoHTTPAPICallbacks[i].level = 0;
+        _attoHTTPAPICallbacks[i].Callback = NULL;
     }
 }
 
