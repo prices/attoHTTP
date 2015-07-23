@@ -38,29 +38,6 @@
 #include <ctype.h>
 #include "attohttp.h"
 
-#ifndef ATTOHTTP_PRINTF_BUFFER_SIZE
-# define ATTOHTTP_PRINTF_BUFFER_SIZE 128
-#endif
-#ifndef ATTOHTTP_URL_BUFFER_SIZE
-# define ATTOHTTP_URL_BUFFER_SIZE 64
-#endif
-#ifndef ATTOHTTP_HEADER_NAME_SIZE
-# define ATTOHTTP_HEADER_NAME_SIZE 32
-#endif
-#ifndef ATTOHTTP_HEADER_VALUE_SIZE
-# define ATTOHTTP_HEADER_VALUE_SIZE 64
-#endif
-#ifndef ATTOHTTP_PAGE_BUFFERS
-# define ATTOHTTP_PAGE_BUFFERS 8
-#endif
-#ifndef ATTOHTTP_API_BUFFERS
-# define ATTOHTTP_API_BUFFERS 8
-#endif
-#ifndef ATTOHTTP_API_LEVELS
-# define ATTOHTTP_API_LEVELS 3
-#endif
-
-
 #define _attoHTTPCheckPage(page)  (!_attoHTTPPageEmpty(page) && (0 == strncmp((char *)_attoHTTP_url, (char *)page.url, sizeof(page.url))))
 #define _attoHTTPDefaultPage() (!_attoHTTPPageEmpty(_attoHTTPDefaultPage) && (strncmp((char *)_attoHTTP_url, "/", sizeof(_attoHTTP_url)) == 0) && (_attoHTTP_url_len == 1))
 #define _attoHTTPPushC(char) _attoHTTP_extra_c = char
@@ -469,7 +446,6 @@ static inline int8_t
 _attoHTTPFindAPICallback(void)
 {
     int8_t ret = 0;
-    attoHTTPDefAPICallback Callback = NULL;
     uint8_t *command[ATTOHTTP_API_LEVELS];
     uint8_t *id[ATTOHTTP_API_LEVELS];
     uint8_t i;
@@ -479,9 +455,6 @@ _attoHTTPFindAPICallback(void)
     uint8_t idlvl = 0;
     // Find the Callback
     if (_attoHTTPDefaultCallback != NULL) {
-        Callback = _attoHTTPDefaultCallback;
-    }
-    if (Callback != NULL) {
         ret = 1;
         // Init the buffers
         for (i = 0; i < ATTOHTTP_API_LEVELS; i++) {
@@ -506,7 +479,7 @@ _attoHTTPFindAPICallback(void)
             url_ptr++;
             ctr--;
         }
-        _attoHTTP_returnCode = Callback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
+        _attoHTTP_returnCode = _attoHTTPDefaultCallback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
     }
     return ret;
 }
