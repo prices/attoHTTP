@@ -577,7 +577,7 @@ _attoHTTPParseURLParamChar(char *c)
         // Take up any space characters in the body.
         do {
             ret = _attoHTTPReadC((uint8_t *)c);
-        } while ((ret == 1) && (isspace(*c) || (*c == '?')));
+        } while ((ret == 1) && (isspace((uint8_t)*c) || (*c == '?')));
     }
     return ret;
 
@@ -674,6 +674,9 @@ attoHTTPFirstLine(uint16_t code)
             case 400:
                 str = "Bad Request";
                 break;
+            case 401:
+                str = "Unauthorized";
+                break;
             case 404:
                 str = "Not Found";
                 break;
@@ -718,7 +721,7 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
             if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) {
                 name_len = 0;
                 divider = c;
-            } else if (isspace(c) && (sqlevel == 0) && (dqlevel == 0) && (level <= 1)) {
+            } else if (isspace((uint8_t)c) && (sqlevel == 0) && (dqlevel == 0) && (level <= 1)) {
                 // Ignore space if it is not between quote marks
                 continue;
             } else if ((c == ',') && (level == 1)) {
@@ -839,7 +842,7 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
         if ((ret != 0) && (c != 0)) {
             if (c == '=') {
                 name_len = 0;
-            } else if ((c == '&') || isspace(c)) {
+            } else if ((c == '&') || isspace((uint8_t)c)) {
                 break;
             } else {
                 // This decodes the URL
