@@ -70,7 +70,9 @@ attoHTTPWrapperMain(uint8_t setup)
     TCPClient client = w_server->available();
     if (client) {
         attoHTTPExecute((void *)&client, (void *)&client);
+        client.flush();
     }
+    client.stop();
 
 }
 /**
@@ -108,7 +110,6 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
         c = client->read();
         if (c >= 0) {
             *byte = (c & 0xFF);
-            Serial.println(c);
             ret = 1;
         }
     }
