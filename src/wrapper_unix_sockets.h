@@ -182,7 +182,12 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
             if (*byte < 32) {
                 printf("[%d]", *byte);
             }
-            printf("%c", *byte);
+            if (*byte == 10) {
+                printf("\r");
+            }
+            if (*byte != 13) {
+                printf("%c", *byte);
+            }
             #endif
         }
     }
