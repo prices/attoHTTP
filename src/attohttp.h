@@ -73,31 +73,6 @@
 
 #include "attohttp_config.h"
 
-#ifndef ATTOHTTP_API_LEVELS
-# define ATTOHTTP_API_LEVELS 3
-#endif
-#ifndef ATTOHTTP_PRINTF_BUFFER_SIZE
-# define ATTOHTTP_PRINTF_BUFFER_SIZE 128
-#endif
-#ifndef ATTOHTTP_URL_BUFFER_SIZE
-# define ATTOHTTP_URL_BUFFER_SIZE 64
-#endif
-#ifndef ATTOHTTP_HEADER_NAME_SIZE
-# define ATTOHTTP_HEADER_NAME_SIZE 32
-#endif
-#ifndef ATTOHTTP_HEADER_VALUE_SIZE
-# define ATTOHTTP_HEADER_VALUE_SIZE 64
-#endif
-#ifndef ATTOHTTP_PAGE_BUFFERS
-# define ATTOHTTP_PAGE_BUFFERS 8
-#endif
-#ifndef ATTOHTTP_API_BUFFERS
-# define ATTOHTTP_API_BUFFERS 8
-#endif
-#ifndef ATTOHTTP_API_COMMAND_SIZE
-# define ATTOHTTP_API_COMMAND_SIZE 8
-#endif
-
 #define HTTP_METHOD_GET "GET"
 #define HTTP_METHOD_PUT "PUT"
 #define HTTP_METHOD_POST "POST"
@@ -178,7 +153,6 @@ typedef enum
 #define ATTOHTTP_MIME_TYPES 6
 
 typedef returncode_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl);
-typedef returncode_t (*attoHTTPAPICallback)(httpmethod_t method, uint16_t accepted, uint8_t **id, uint8_t idlvl);
 
 /**
  * @brief This keeps track of our pages
@@ -191,17 +165,6 @@ typedef struct {
     uint16_t size;
     mimetypes_t type;
 } attoHTTPPage_t;
-
-/**
- * @brief This keeps track of our pages
- *
- * This struct keeps track of pages and what to load for them.
- */
-typedef struct {
-    char commands[ATTOHTTP_API_LEVELS][ATTOHTTP_API_COMMAND_SIZE];
-    attoHTTPAPICallback Callback;
-    uint8_t level;
-} attoHTTPAPI_t;
 
 /**
  * @brief This keeps track of our pages
@@ -230,7 +193,6 @@ uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
 uint16_t attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers);
 uint16_t attoHTTPFirstLine(uint16_t code);
 uint8_t attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len);
-uint8_t attoHTTPRESTCallback(attoHTTPAPICallback Callback, const char **commands, uint8_t level);
 
 #ifdef __cplusplus
 }
