@@ -162,7 +162,7 @@ attoHTTPWrapperEnd(void)
 static inline uint16_t
 attoHTTPGetByte(void *read, uint8_t *byte) {
     int16_t sock = *(int16_t *)read;
-    uint16_t ret = 0;
+    int16_t ret = 0;
     fd_set active;
     if (sock > 0) {
         FD_ZERO(&active);
@@ -173,7 +173,9 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
                 exit(errno);
             }
         }
-        if (ret == 0) {
+        if (ret < 0) {
+            ret = 0;
+        } else if (ret == 0) {
             close(sock);
             sock = -1;
         } else if ((ret > 0) && FD_ISSET(sock, &active)) {
