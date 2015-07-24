@@ -265,7 +265,7 @@ _attoHTTPParseMethod(void)
             _attoHTTP_returnCode = UNSUPPORTED;
         }
 #ifdef __DEBUG__
-        printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
+//        printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
 #endif
 
     }
@@ -309,7 +309,7 @@ _attoHTTPParseURL(void)
         _attoHTTPPushC(c);
         _attoHTTP_url[_attoHTTP_url_len] = 0;
 #ifdef __DEBUG__
-        printf("URL: '%s'" HTTPEOL, _attoHTTP_url);
+//        printf("URL: '%s'" HTTPEOL, _attoHTTP_url);
 #endif
 
     }
@@ -422,7 +422,7 @@ _attoHTTPParseHeaders(void)
             }
         } else if (strncasecmp((char *)name, "content-type", sizeof(name)) == 0) {
             for (i = 0; i < ATTOHTTP_MIME_TYPES; i++) {
-                if (strncasecmp((char *)value, (char *)_mimetypes[i], sizeof(value)) == 0) {
+                if (strstr((char *)value, (char *)_mimetypes[i]) != NULL) {
                     _attoHTTP_contenttype = i;
                     break;
                 }
@@ -772,9 +772,10 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
     if ((divider == 0) && (n != name)) {
         strncpy(v, n, vl);
         snprintf(n, nl, "%d", _attoHTTPParseJSONParam_counter++);
+        name_len = 0;
     }
 
-    return c == 0;
+    return name_len == 0;
 
 }
 /**
@@ -810,13 +811,16 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
     char c;
     char decode[3];
     uint8_t ret;
+    uint16_t count = 0;
     do {
         ret = _attoHTTPParseURLParamChar(&c);
         if ((ret != 0) && (c != 0)) {
             if (c == '=') {
                 name_len = 0;
             } else if ((c == '&') || isspace((uint8_t)c)) {
-                break;
+                if (count > 0) {
+                    break;
+                }
             } else {
                 // This decodes the URL
                 if (c == '%') {
@@ -826,6 +830,7 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
                     c = strtol(decode, NULL, 16);
                 }
                 if (name_len > 0) {
+                    count++;
                     *name++ = c;
                     name_len--;
                 } else {
@@ -840,7 +845,7 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
     // Make sure there is a trailing \0
     *value= 0;
     *name = 0;
-    return c == 0;
+    return name_len == 0;
 
 }
 /**
@@ -1064,7 +1069,7 @@ attoHTTPExecute(void *read, void *write)
     }
     attoHTTPFirstLine(_attoHTTP_returnCode);
 #ifdef __DEBUG__
-    printf("Return Code %d" HTTPEOL, _attoHTTP_returnCode);
+//    printf("Return Code %d" HTTPEOL, _attoHTTP_returnCode);
 #endif
 
     return _attoHTTP_returnCode;

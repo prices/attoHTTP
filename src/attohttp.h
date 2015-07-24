@@ -123,6 +123,7 @@
 typedef enum
 {
     OK = 200,
+    ACCEPTED = 202,
     UNSUPPORTED = 501,
     BADREQUEST = 400,
     UNAUTHORIZED = 401,
