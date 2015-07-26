@@ -479,7 +479,11 @@ _attoHTTPFindAPICallback(void)
             url_ptr++;
             ctr--;
         }
-        _attoHTTP_returnCode = _attoHTTPDefaultCallback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
+        if (cmdlvl > 0) {
+            _attoHTTP_returnCode = _attoHTTPDefaultCallback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
+        } else {
+            _attoHTTP_returnCode = INTERNAL_ERROR;
+        }
     }
     return ret;
 }
