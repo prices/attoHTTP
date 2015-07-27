@@ -131,7 +131,7 @@ _attoHTTPInitRun(void)
     _attoHTTP_headersDone = 0;
     _attoHTTP_headersSent = 0;
     _attoHTTP_firstlineSent = 0;
-    _attoHTTP_returnCode = OK;
+    _attoHTTP_returnCode = RUNKNOWN;
     _attoHTTP_extra_c = -1;
     _attoHTTP_url_params = NULL;
     _attoHTTP_url_params_start = ATTOHTTP_URL_BUFFER_SIZE;
@@ -1054,14 +1054,14 @@ attoHTTPExecute(void *read, void *write)
     // Parse the first line
     _attoHTTPParseMethod();
 
-    if (_attoHTTP_returnCode == OK) {
+    if (_attoHTTP_returnCode == RUNKNOWN) {
         _attoHTTPParseURL();
         _attoHTTPParseVersion();
     }
-    if (_attoHTTP_returnCode == OK) {
+    if (_attoHTTP_returnCode == RUNKNOWN) {
         _attoHTTPParseHeaders();
     }
-    if (_attoHTTP_returnCode == OK) {
+    if (_attoHTTP_returnCode == RUNKNOWN) {
         _attoHTTP_returnCode = NOT_FOUND;
 
         ret = _attoHTTPFindPage();
@@ -1070,6 +1070,9 @@ attoHTTPExecute(void *read, void *write)
         } else if (ret == 0) {
             // Not found in the find page, so check the RESTful stuff
         }
+    }
+    if (_attoHTTP_returnCode == RUNKNOWN) {
+        _attoHTTP_returnCode = INTERNAL_ERROR;
     }
     attoHTTPFirstLine(_attoHTTP_returnCode);
 #ifdef __DEBUG__

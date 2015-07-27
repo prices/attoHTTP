@@ -128,7 +128,8 @@ typedef enum
     BADREQUEST = 400,
     UNAUTHORIZED = 401,
     INTERNAL_ERROR = 500,
-    NOT_FOUND = 404
+    NOT_FOUND = 404,
+    RUNKNOWN = 510
 } returncode_t;
 
 /**
