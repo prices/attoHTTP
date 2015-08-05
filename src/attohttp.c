@@ -961,7 +961,7 @@ attoHTTPSendHeaders(void)
         attoHTTPFirstLine(_attoHTTP_returnCode);
     }
     if (_attoHTTP_headersSent == 0) {
-        chars += attoHTTPprintf("Content-Type: %s" HTTPEOL, _mimetypes[_attoHTTP_contenttype]);
+        chars += attoHTTPprintf("Content-Type: %s; charset=utf-8" HTTPEOL, _mimetypes[_attoHTTP_contenttype]);
         if (_attoHTTP_contentlength > 0) {
             chars += attoHTTPprintf("Content-Length: %d" HTTPEOL, _attoHTTP_contentlength);
         }
@@ -990,7 +990,7 @@ attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers)
         attoHTTPFirstLine(code);
     }
     if (_attoHTTP_headersSent == 0) {
-        chars += attoHTTPprintf("Content-Type: %s" HTTPEOL, type);
+        chars += attoHTTPprintf("Content-Type: %s; charset=utf-8" HTTPEOL, type);
         if (headers != NULL) {
             chars += attoHTTPprint(headers);
         }
