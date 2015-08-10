@@ -601,7 +601,10 @@ attoHTTPprintf(const char *format, ...)
     count = vsnprintf(buffer, 128, format, ap);
     va_end(ap);
     // This makes sure it is always zero terminated.
-    buffer[ATTOHTTP_PRINTF_BUFFER_SIZE - 1] = 0;
+    if (count == ATTOHTTP_PRINTF_BUFFER_SIZE) {
+        buffer[ATTOHTTP_PRINTF_BUFFER_SIZE - 1] = 0;
+        count--;
+    }
     return attoHTTPwrite((uint8_t *)buffer, count);
 }
 /**
