@@ -35,7 +35,7 @@
 #include "test.h"
 
 static const uint8_t default_content[] = "Default";
-static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\nDefault";
+static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 1024
 #define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
@@ -279,7 +279,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
                               (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");
-        fct_chk_eq_str("HTTP/1.0 500 Internal Error\r\nContent-Type: application/json\r\n\r\n", write_buffer);
+        fct_chk_eq_str("HTTP/1.0 500 Internal Error\r\nContent-Type: application/json; charset=utf-8\r\n\r\n", write_buffer);
     }
     FCT_TEST_END()
     /**
@@ -303,7 +303,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
                               (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");
-        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n", write_buffer);
+        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json; charset=utf-8\r\n\r\n", write_buffer);
     }
     FCT_TEST_END()
     /**
@@ -327,7 +327,32 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
                               (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");
-        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Encoding: gzip\r\n\r\n", write_buffer);
+        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Encoding: gzip\r\n\r\n", write_buffer);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETDefaultRESTPrintfBufferOverflow) {
+        returncode_t ret;
+        
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            attoHTTPRESTSendHeaders(200, "application/json", "Content-Encoding: gzip" HTTPEOL);
+            attoHTTPprintf("%s", "0123456789ABCDEF1123456789ABCDEF2123456789ABCDEF3123456789ABCDEF4123456789ABCDEF5123456789ABCDEF6123456789ABCDEF7123456789ABCDEF8123456789ABCDEF9123456789ABCDEF");
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /level1 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
+                              (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Encoding: gzip\r\n\r\n0123456789ABCDEF1123456789ABCDEF2123456789ABCDEF3123456789ABCDEF4123456789ABCDEF5123456789ABCDEF6123456789ABCDEF7123456789ABCDE", write_buffer);
     }
     FCT_TEST_END()
 

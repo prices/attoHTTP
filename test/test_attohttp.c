@@ -35,7 +35,7 @@
 #include "test.h"
 
 static const uint8_t default_content[] = "Default";
-static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\nDefault";
+static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 1024
 #define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
@@ -331,7 +331,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
             (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");
-        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: 7\r\n\r\nIndex6", write_buffer);
+        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 7\r\n\r\nIndex6", write_buffer);
     }
     FCT_TEST_END()
     /**
@@ -348,7 +348,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
             (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");
-        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 8\r\n\r\nIndex61", write_buffer);
+        fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 8\r\n\r\nIndex61", write_buffer);
     }
     FCT_TEST_END()
     /**
