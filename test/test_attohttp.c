@@ -100,6 +100,21 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
      *
      * @return void
      */
+    FCT_TEST_BGN(testGETPageWithNULLStart) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"\0\0\0GET /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
     FCT_TEST_BGN(testPUTPage) {
         returncode_t ret;
         attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
