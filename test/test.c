@@ -61,7 +61,7 @@ attoHTTPGetByte(void *extra, uint8_t *byte)
     }
     if ((TestReadString != NULL) && (byte != NULL)) {
         *byte = TestReadString[TestReadCount];
-        if (*byte > 0) {
+        if ((*byte > 0) || (TestReadCount < 10)) {
             // If we get the end of string, just keep returning it.
             TestReadCount++;
         }

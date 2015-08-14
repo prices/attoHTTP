@@ -216,6 +216,23 @@ _attoHTTPWriteC(uint8_t c)
     return attoHTTPSetByte(_attoHTTP_write, c);
 }
 /**
+ * @brief Waits for a character.
+ *
+ * @return 1 if there is more to read, 0 if done reading
+ */
+int8_t
+_attoHTTPInputReady(void)
+{
+    int8_t ret;
+    uint8_t c, count = 0;
+    do {
+        ret = _attoHTTPReadC(&c);
+        count++;
+    } while ((ret == 0) && (count < 100));
+    _attoHTTPPushC(c);
+    return ret;
+}
+/**
  * @brief Read characters until a non-space character is encountered.
  *
  * @return 1 if there is more to read, 0 if done reading
@@ -266,13 +283,11 @@ _attoHTTPParseEOL(void)
 static inline int8_t
 _attoHTTPParseMethod(void)
 {
-    uint8_t ret = 1;
+    uint8_t ret;
     uint8_t buffer[10];
     uint16_t ptr;
-    _attoHTTP_extra_c = -1;
     // Remove any extra space
     ret = _attoHTTPParseSpace();
-
     if (ret) {
         ptr = 0;
         do {
@@ -299,7 +314,7 @@ _attoHTTPParseMethod(void)
             _attoHTTP_returnCode = UNSUPPORTED;
         }
 #ifdef __DEBUG__
-//        printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
+        printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
 #endif
 
     }
@@ -343,7 +358,7 @@ _attoHTTPParseURL(void)
         _attoHTTPPushC(c);
         _attoHTTP_url[_attoHTTP_url_len] = 0;
 #ifdef __DEBUG__
-//        printf("URL: '%s'" HTTPEOL, _attoHTTP_url);
+        printf("URL: '%s'" HTTPEOL, _attoHTTP_url);
 #endif
 
     }
@@ -1091,6 +1106,7 @@ attoHTTPExecute(void *read, void *write)
 
     // Init all of the variables.
     _attoHTTPInitRun();
+    _attoHTTPInputReady();
     // Parse the first line
     _attoHTTPParseMethod();
 
