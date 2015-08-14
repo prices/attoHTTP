@@ -227,7 +227,7 @@ _attoHTTPParseSpace(void)
     uint8_t c;
     do {
         ret = _attoHTTPReadC(&c);
-    } while (isblank(c) && (ret != 0));
+    } while (isblank(c) && (ret > 0));
     _attoHTTPPushC(c);
     return ret;
 }
@@ -251,7 +251,7 @@ _attoHTTPParseEOL(void)
         if (c == '\n') {
             eolCount++;
         }
-    } while ((isspace(c) || (eolCount == 0)) && (ret != 0) && (eolCount < 2));
+    } while ((isspace(c) || (eolCount == 0)) && (ret > 0) && (eolCount < 2));
     _attoHTTPPushC(c);
     if (eolCount > 1) {
         _attoHTTP_headersDone = 1;
@@ -314,12 +314,12 @@ _attoHTTPParseMethod(void)
 static inline int8_t
 _attoHTTPParseURL(void)
 {
-    uint8_t ret;
+    int8_t ret;
     uint8_t c;
     // Remove any extra space
     ret = _attoHTTPParseSpace();
 
-    if (ret) {
+    if (ret > 0) {
         _attoHTTP_url_len = 0;
         do {
             ret = _attoHTTPReadC(&_attoHTTP_url[_attoHTTP_url_len]);
@@ -358,13 +358,13 @@ _attoHTTPParseURL(void)
 static inline int8_t
 _attoHTTPParseVersion()
 {
-    uint8_t ret;
+    int8_t ret;
     uint8_t buffer[10];
     uint16_t ptr;
     // Remove any extra space
     ret = _attoHTTPParseSpace();
 
-    if (ret) {
+    if (ret > 0) {
         ptr = 0;
         do {
             ret = _attoHTTPReadC(&buffer[ptr]);
@@ -401,7 +401,7 @@ _attoHTTPParseVersion()
 static inline int8_t
 _attoHTTPParseHeader(uint8_t *name, uint16_t namesize, uint8_t *value, uint16_t valuesize)
 {
-    uint8_t ret;
+    int8_t ret;
     namesize--; // Account for the termination character
     do {
         ret = _attoHTTPReadC(name);
@@ -446,7 +446,7 @@ _attoHTTPParseHeaders(void)
     uint8_t name[ATTOHTTP_HEADER_NAME_SIZE];
     uint8_t value[ATTOHTTP_HEADER_VALUE_SIZE];
 
-    while ((_attoHTTP_headersDone == 0) && (ret != 0)) {
+    while ((_attoHTTP_headersDone == 0) && (ret > 0)) {
         ret = _attoHTTPParseHeader(name, sizeof(name), value, sizeof(value));
         if (strncasecmp((char *)name, "accept", sizeof(name)) == 0) {
             for (i = 0; i < ATTOHTTP_MIME_TYPES; i++) {
@@ -729,14 +729,14 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
     char c;
     char *n = name, *v = value;
     uint8_t nl = name_len, vl = value_len;
-    uint8_t ret;
+    int8_t ret;
     uint8_t sqlevel = 0;
     uint8_t dqlevel = 0;
     uint8_t divider = 0;
     uint8_t level = 0;
     do {
         ret = _attoHTTPReadC((uint8_t *)&c);
-        if ((ret != 0) && (c != 0)) {
+        if ((ret > 0) && (c != 0)) {
             level = _attoHTTPParseJSONParam_cblevel + _attoHTTPParseJSONParam_sblevel;
             if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) {
                 name_len = 0;
@@ -857,11 +857,11 @@ attoHTTPParseURLParam(char *name, uint8_t name_len, char *value, uint8_t value_l
 {
     char c;
     char decode[3];
-    uint8_t ret;
+    int8_t ret;
     uint16_t count = 0;
     do {
         ret = _attoHTTPParseURLParamChar(&c);
-        if ((ret != 0) && (c != 0)) {
+        if ((ret > 0) && (c != 0)) {
             if (c == '=') {
                 name_len = 0;
             } else if ((c == '&') || isspace((uint8_t)c)) {
