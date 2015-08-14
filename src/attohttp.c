@@ -271,35 +271,37 @@ _attoHTTPParseMethod(void)
     uint16_t ptr;
     // Remove any extra space
     ret = _attoHTTPParseSpace();
-    ptr = 0;
-    do {
-        ret = _attoHTTPReadC(&buffer[ptr]);
-        if (isblank(buffer[ptr])) {
-            break;
-        } else {
-            ptr++;
-        }
-    } while ((ret > 0) && (ptr < (sizeof(buffer) - 1)));
-    buffer[ptr] = 0;
+    if (ret > 0) {
+        ptr = 0;
+        do {
+            ret = _attoHTTPReadC(&buffer[ptr]);
+            if (isblank(buffer[ptr])) {
+                break;
+            } else {
+                ptr++;
+            }
+        } while ((ret > 0) && (ptr < (sizeof(buffer) - 1)));
+        buffer[ptr] = 0;
 
-    if (strncmp(HTTP_METHOD_GET, (char *)buffer, sizeof(buffer)) == 0) {
-        _attoHTTPMethod = GET;
-    } else if (strncmp(HTTP_METHOD_POST, (char *)buffer, sizeof(buffer)) == 0) {
-        _attoHTTPMethod = POST;
-    } else if (strncmp(HTTP_METHOD_PUT, (char *)buffer, sizeof(buffer)) == 0) {
-        _attoHTTPMethod = PUT;
-    } else if (strncmp(HTTP_METHOD_DELETE, (char *)buffer, sizeof(buffer)) == 0) {
-        _attoHTTPMethod = DELETE;
-    } else if (strncmp(HTTP_METHOD_PATCH, (char *)buffer, sizeof(buffer)) == 0) {
-        _attoHTTPMethod = PATCH;
-    } else if (ptr > 0) {
-        _attoHTTP_returnCode = UNSUPPORTED;
+        if (strncmp(HTTP_METHOD_GET, (char *)buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = GET;
+        } else if (strncmp(HTTP_METHOD_POST, (char *)buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = POST;
+        } else if (strncmp(HTTP_METHOD_PUT, (char *)buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = PUT;
+        } else if (strncmp(HTTP_METHOD_DELETE, (char *)buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = DELETE;
+        } else if (strncmp(HTTP_METHOD_PATCH, (char *)buffer, sizeof(buffer)) == 0) {
+            _attoHTTPMethod = PATCH;
+        } else { 
+            _attoHTTP_returnCode = UNSUPPORTED;
+        }
+#ifdef __DEBUG__
+        printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
+#endif
     } else {
         _attoHTTP_returnCode = INTERNAL_ERROR;
     }
-#ifdef __DEBUG__
-    printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
-#endif
 
     return ret;
 
