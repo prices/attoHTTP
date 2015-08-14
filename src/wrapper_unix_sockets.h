@@ -43,6 +43,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/un.h>
+#include <sys/time.h>
 
 #include "attohttp.h"
 
@@ -67,7 +68,7 @@ attoHTTPWrapperInit(uint16_t port)
     attoHTTPInit();
     struct sockaddr_in server;
     attoHTTPUnixSock = -1;
-    if ((attoHTTPUnixSock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1) {
+    if ((attoHTTPUnixSock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("Socket");
         exit(EXIT_FAILURE);
     }
@@ -152,6 +153,9 @@ attoHTTPWrapperEnd(void)
  * This function must be defined by the user.  It will allow this software to
  * get bytes from any source.
  *
+ * This function should only return when it has something (ret == 1), when it
+ * timed out waiting for something (ret == 0), or when there was an error (ret == -1)
+ *
  * @param read This is whatever it needs to be.  Could be a socket, or an object,
  *              or something totally different.  It will be called with whatever
  *              extra argument was given to the execute routine.
@@ -159,28 +163,34 @@ attoHTTPWrapperEnd(void)
  *
  * @return 1 if a character was read, 0 otherwise.
  */
-static inline uint16_t
+static inline int8_t
 attoHTTPGetByte(void *read, uint8_t *byte) {
     int16_t sock = *(int16_t *)read;
     int16_t ret = 0;
+    struct timeval timeout = {1, 0};
+
     fd_set active;
     if (sock > 0) {
         FD_ZERO(&active);
         FD_SET(sock, &active);
-        if ((ret = select(FD_SETSIZE, &active, NULL, NULL, NULL)) < 0) {
-            if (errno != EINTR) {
-                perror("select");
-                exit(errno);
+        do {
+            ret = select(FD_SETSIZE, &active, NULL, NULL, &timeout);
+            if (ret < 0) {
+                if (errno != EINTR) {
+                    perror("select");
+                    exit(errno);
+                }
+            } else if (ret == 0) {
+                close(sock);
+                // Set the saved socket to -1
+                *(int16_t *)read = -1;
+                ret = -1;
+            } else if ((ret > 0) && FD_ISSET(sock, &active)) {
+                ret = recv(sock, byte, 1, 0);
             }
-        }
-        if (ret < 0) {
-            ret = 0;
-        } else if (ret == 0) {
-            close(sock);
-            sock = -1;
-        } else if ((ret > 0) && FD_ISSET(sock, &active)) {
-            ret = recv(sock, byte, 1, 0);
-            #ifdef __DEBUG__
+        } while (ret < 0);
+        #ifdef __DEBUG__
+        if (ret > 0) {
             if (*byte < 32) {
                 printf("[%d]", *byte);
             }
@@ -190,8 +200,9 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
             if (*byte != 13) {
                 printf("%c", *byte);
             }
-            #endif
         }
+        #endif
+        
     }
     return ret;
 }

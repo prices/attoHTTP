@@ -216,23 +216,6 @@ _attoHTTPWriteC(uint8_t c)
     return attoHTTPSetByte(_attoHTTP_write, c);
 }
 /**
- * @brief Waits for a character.
- *
- * @return 1 if there is more to read, 0 if done reading
- */
-int8_t
-_attoHTTPInputReady(void)
-{
-    int8_t ret;
-    uint8_t c, count = 0;
-    do {
-        ret = _attoHTTPReadC(&c);
-        count++;
-    } while ((ret == 0) && (count < 100));
-    _attoHTTPPushC(c);
-    return ret;
-}
-/**
  * @brief Read characters until a non-space character is encountered.
  *
  * @return 1 if there is more to read, 0 if done reading
@@ -283,41 +266,41 @@ _attoHTTPParseEOL(void)
 static inline int8_t
 _attoHTTPParseMethod(void)
 {
-    uint8_t ret;
+    int8_t ret;
     uint8_t buffer[10];
     uint16_t ptr;
     // Remove any extra space
     ret = _attoHTTPParseSpace();
-    if (ret) {
-        ptr = 0;
-        do {
-            ret = _attoHTTPReadC(&buffer[ptr]);
-            if (isblank(buffer[ptr])) {
-                break;
-            } else {
-                ptr++;
-            }
-        } while (ret && (ptr < (sizeof(buffer) - 1)));
-        buffer[ptr] = 0;
-
-        if (strncmp(HTTP_METHOD_GET, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = GET;
-        } else if (strncmp(HTTP_METHOD_POST, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = POST;
-        } else if (strncmp(HTTP_METHOD_PUT, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = PUT;
-        } else if (strncmp(HTTP_METHOD_DELETE, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = DELETE;
-        } else if (strncmp(HTTP_METHOD_PATCH, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = PATCH;
+    ptr = 0;
+    do {
+        ret = _attoHTTPReadC(&buffer[ptr]);
+        if (isblank(buffer[ptr])) {
+            break;
         } else {
-            _attoHTTP_returnCode = UNSUPPORTED;
+            ptr++;
         }
+    } while ((ret > 0) && (ptr < (sizeof(buffer) - 1)));
+    buffer[ptr] = 0;
+
+    if (strncmp(HTTP_METHOD_GET, (char *)buffer, sizeof(buffer)) == 0) {
+        _attoHTTPMethod = GET;
+    } else if (strncmp(HTTP_METHOD_POST, (char *)buffer, sizeof(buffer)) == 0) {
+        _attoHTTPMethod = POST;
+    } else if (strncmp(HTTP_METHOD_PUT, (char *)buffer, sizeof(buffer)) == 0) {
+        _attoHTTPMethod = PUT;
+    } else if (strncmp(HTTP_METHOD_DELETE, (char *)buffer, sizeof(buffer)) == 0) {
+        _attoHTTPMethod = DELETE;
+    } else if (strncmp(HTTP_METHOD_PATCH, (char *)buffer, sizeof(buffer)) == 0) {
+        _attoHTTPMethod = PATCH;
+    } else if (ptr > 0) {
+        _attoHTTP_returnCode = UNSUPPORTED;
+    } else {
+        _attoHTTP_returnCode = INTERNAL_ERROR;
+    }
 #ifdef __DEBUG__
-        printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
+    printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
 #endif
 
-    }
     return ret;
 
 }
@@ -569,6 +552,10 @@ _attoHTTPFindPage(void)
             attoHTTPwrite(page->content, page->size);
             ret = 1;
         } else {
+#ifdef __DEBUG__
+        printf("Wrong method on page: %d\r\n", _attoHTTPMethod);
+#endif
+            
             _attoHTTP_returnCode = UNSUPPORTED;
             ret = -1;
         }
@@ -1106,7 +1093,6 @@ attoHTTPExecute(void *read, void *write)
 
     // Init all of the variables.
     _attoHTTPInitRun();
-    _attoHTTPInputReady();
     // Parse the first line
     _attoHTTPParseMethod();
 
@@ -1132,7 +1118,7 @@ attoHTTPExecute(void *read, void *write)
     }
     attoHTTPFirstLine(_attoHTTP_returnCode);
 #ifdef __DEBUG__
-//    printf("Return Code %d" HTTPEOL, _attoHTTP_returnCode);
+    printf("Return Code %d" HTTPEOL, _attoHTTP_returnCode);
 #endif
 
     return _attoHTTP_returnCode;

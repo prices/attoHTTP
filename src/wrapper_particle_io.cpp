@@ -93,6 +93,9 @@ attoHTTPWrapperEnd(void)
  *
  * This function must be defined by the user.  It will allow this software to
  * get bytes from any source.
+ * 
+ * This function should only return when it has something (ret == 1), when it
+ * timed out waiting for something (ret == 0), or when there was an error (ret == -1)
  *
  * @param read This is whatever it needs to be.  Could be a socket, or an object,
  *              or something totally different.  It will be called with whatever
@@ -101,17 +104,24 @@ attoHTTPWrapperEnd(void)
  *
  * @return 1 if a character was read, 0 otherwise.
  */
-uint16_t
+int16_t
 attoHTTPGetByte(void *read, uint8_t *byte) {
-    uint16_t ret = 0;
+    int16_t ret = 0;
     TCPClient *client = (TCPClient *)read;
+    uint32_t timeout = millis() + 1000;
     int c;
-    if (client->available() > 0) {
-        c = client->read();
-        if (c >= 0) {
-            *byte = (c & 0xFF);
-            ret = 1;
-        }
+    if (client->connected()) {
+        do {
+            if (client->available() > 0) {
+                c = client->read();
+                if (c >= 0) {
+                    *byte = (c & 0xFF);
+                    ret = 1;
+                }
+            }
+        } while ((ret == 0) && (timeout > millis()));
+    } else {
+        ret = -1;
     }
     return ret;
 }
