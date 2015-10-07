@@ -39,6 +39,7 @@ FCT_BGN()
     FCTMF_SUITE_CALL(test_attohttp);
     FCTMF_SUITE_CALL(test_attohttpAPI);
     FCTMF_SUITE_CALL(test_attohttpParams);
+    FCTMF_SUITE_CALL(test_attohttpstress);
 }
 FCT_END();
 

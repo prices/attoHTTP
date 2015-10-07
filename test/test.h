@@ -34,5 +34,6 @@
 
 void TestInit(void);
 
+#define NewConnection() TestInit()
 #endif
 
