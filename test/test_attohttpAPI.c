@@ -230,7 +230,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
      *
      * @return void
      */
-    FCT_TEST_BGN(testGETDefaultRESTExtraSlash) {
+    FCT_TEST_BGN(testGETDefaultRESTExtraSlashCommand) {
         returncode_t ret;
         
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
@@ -252,6 +252,38 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
         ret = attoHTTPExecute(
             (void *)"GET /level1/ HTTP/1.0\r\nAccept: application/json\r\n\r\n",
+            (void *)write_buffer
+        );
+        fct_xchk((ret == OK), "Return was not 'OK'");
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETDefaultRESTExtraSlashId) {
+        returncode_t ret;
+        
+        returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
+        {
+            fct_xchk((method == DELETE), "Return was not 'DELETE'");
+            fct_xchk((cmdlvl == 1), "Command level was not 1");
+            fct_xchk((idlvl == 1), "Id level was not 1");
+            fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
+            fct_chk_eq_str("level1", (char *)command[0]);
+            fct_chk_eq_str("1", (char *)id[0]);
+            fct_xchk((command[1] == NULL), "command[1] != NULL");
+            fct_xchk((id[1] == NULL), "id[1] != NULL");
+            fct_xchk((command[2] == NULL), "command[2] != NULL");
+            fct_xchk((id[2] == NULL), "id[2] != NULL");
+            return OK;
+        }
+
+        attoHTTPDefaultREST(testCallback);
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"DELETE /level1/1/ HTTP/1.0\r\nAccept: application/json\r\n\r\n",
             (void *)write_buffer
         );
         fct_xchk((ret == OK), "Return was not 'OK'");

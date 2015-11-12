@@ -499,8 +499,11 @@ _attoHTTPFindAPICallback(void)
         while ((*url_ptr != 0) && (ctr > 0)) {
             if (*url_ptr == '/') {
                 if ((cmdlvl == idlvl) && (cmdlvl < ATTOHTTP_API_LEVELS)) {
-                    command[cmdlvl] = url_ptr + 1;
-                    cmdlvl++;
+                    // Don't get a level if there is nothing after the slash.
+                    if (ctr > 1) {
+                        command[cmdlvl] = url_ptr + 1;
+                        cmdlvl++;
+                    }
                 } else if ((cmdlvl > idlvl) && (idlvl < ATTOHTTP_API_LEVELS)) {
                     // Don't get a level if there is nothing after the slash.
                     if (ctr > 1) {
