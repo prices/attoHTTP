@@ -1109,7 +1109,7 @@ attoHTTPExecute(void *read, void *write)
         _attoHTTP_returnCode = NOT_FOUND;
 
         ret = _attoHTTPFindPage();
-        if (ret > 0) {
+        if ((ret > 0) && (_attoHTTP_returnCode == RUNKNOWN)) {
             _attoHTTP_returnCode = OK;
         } else if (ret == 0) {
             // Not found in the find page, so check the RESTful stuff
