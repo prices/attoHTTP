@@ -75,7 +75,6 @@ unsigned char favicon_ico[] = {
 };
 unsigned int favicon_ico_len = 325;
 
-
 /***************************************************************************
  *                              Private Parameters
  * @cond dev
@@ -1129,3 +1128,59 @@ attoHTTPExecute(void *read, void *write)
     return _attoHTTP_returnCode;
 
 }
+
+#ifdef ATTOHTTP_BASIC_AUTH
+uint8_t base64data[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+/**
+ * @brief encodes a string as base64 RFC2045
+ *
+ * @param input  The input string to use
+ * @param ilen   The length of the input string
+ * @param output The output string
+ * @param olen   The length of the output buffer
+ *
+ * @return number of characters in return string
+ */
+uint16_t
+attoHTTPBase64Encode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen)
+{
+    uint16_t i;
+    uint16_t o = 0;
+    uint8_t c;
+    for (i = 0; i < ilen; i+= 3) {
+        if (o > olen) break;
+        c = (input[i]>>2) & 0x3F;
+        output[o++] = base64data[c];
+        if (o > olen) break;
+        c = (input[i]<< 4) & 0x3F;
+        if ((i + 1) < ilen) {
+            c |= (input[i+1]>>4) & 0x3F;
+            output[o++] = base64data[c];
+            if (o > olen) break;
+            c = (input[i+1]<<2) & 0x3F;
+            if ((i + 2) < ilen) {
+                c |= (input[i+2]>>6) & 0x3F;
+                output[o++] = base64data[c];
+                if (o > olen) break;
+                c = input[i+2] & 0x3F;
+                output[o++] = base64data[c];
+            } else {
+                output[o++] = base64data[c];
+                if (o > olen) break;
+                output[o++] = '=';
+            }
+        } else {
+            output[o++] = base64data[c];
+            if (o > olen) break;
+            output[o++] = '=';
+            if (o > olen) break;
+            output[o++] = '=';
+        }
+    }
+    if (o < olen) {
+        output[o] = 0;
+    }
+    return o;
+}
+
+#endif

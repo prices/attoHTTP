@@ -1,5 +1,5 @@
 
-BASEDIR:=../
+BASEDIR:=../../
 
 TEST_OBJECTS:=test.o attohttp.o test_attohttp.o test_attohttpAPI.o test_attohttpparams.o test_attohttpstress.o
 
