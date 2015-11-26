@@ -1177,9 +1177,10 @@ attoHTTPBase64Encode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen
             output[o++] = '=';
         }
     }
-    if (o < olen) {
-        output[o] = 0;
+    if (o >= olen) {
+        o = olen - 1;
     }
+    output[o] = 0;
     return o;
 }
 /**
@@ -1246,17 +1247,16 @@ attoHTTPBase64Decode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen
                 output[o++] = ((c[2]<<6) & 0xC0) | (c[3] & 0x3F);
                 if (o >= olen) break;
             } else {
-                output[o++] = ((c[2]<<6) & 0xC0);
-                if (o >= olen) break;
+                break;
             }
         } else {
-            output[o++] = (c[1]<<4) & 0xF0;
-            if (o >= olen) break;
+            break;
         }
     }
-    if (o < olen) {
-        output[o] = 0;
+    if (o >= olen) {
+        o = olen - 1;
     }
+    output[o] = 0;
     return o;
 }
 #endif
