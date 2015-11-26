@@ -41,5 +41,5 @@ build
 test/*-Results.xml
 *.gcda
 *.gcno
-test/run_test
+run_test
 

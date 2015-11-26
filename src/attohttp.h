@@ -224,6 +224,8 @@ uint8_t attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t va
 
 #ifdef ATTOHTTP_BASIC_AUTH
 uint16_t attoHTTPBase64Encode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen);
+uint16_t attoHTTPBase64Decode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen);
+
 #endif
 
 #ifdef __cplusplus

@@ -1130,7 +1130,7 @@ attoHTTPExecute(void *read, void *write)
 }
 
 #ifdef ATTOHTTP_BASIC_AUTH
-uint8_t base64data[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+uint8_t base64data[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 /**
  * @brief encodes a string as base64 RFC2045
  *
@@ -1148,32 +1148,32 @@ attoHTTPBase64Encode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen
     uint16_t o = 0;
     uint8_t c;
     for (i = 0; i < ilen; i+= 3) {
-        if (o > olen) break;
+        if (o >= olen) break;
         c = (input[i]>>2) & 0x3F;
         output[o++] = base64data[c];
-        if (o > olen) break;
+        if (o >= olen) break;
         c = (input[i]<< 4) & 0x3F;
         if ((i + 1) < ilen) {
             c |= (input[i+1]>>4) & 0x3F;
             output[o++] = base64data[c];
-            if (o > olen) break;
+            if (o >= olen) break;
             c = (input[i+1]<<2) & 0x3F;
             if ((i + 2) < ilen) {
                 c |= (input[i+2]>>6) & 0x3F;
                 output[o++] = base64data[c];
-                if (o > olen) break;
+                if (o >= olen) break;
                 c = input[i+2] & 0x3F;
                 output[o++] = base64data[c];
             } else {
                 output[o++] = base64data[c];
-                if (o > olen) break;
+                if (o >= olen) break;
                 output[o++] = '=';
             }
         } else {
             output[o++] = base64data[c];
-            if (o > olen) break;
+            if (o >= olen) break;
             output[o++] = '=';
-            if (o > olen) break;
+            if (o >= olen) break;
             output[o++] = '=';
         }
     }
@@ -1182,5 +1182,81 @@ attoHTTPBase64Encode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen
     }
     return o;
 }
-
+/**
+ * @brief decodes a single character.
+ *
+ * @param c The character to decode
+ *
+ * @return The decoded char
+ */
+int8_t
+_attoHTTPBase64DecodeChar(uint8_t c)
+{
+    int8_t ret;
+    if ((c >= 'A') && (c <= 'Z')) {
+        ret = c - 'A';
+    } else if ((c >= 'a') && (c <= 'z')) {
+        ret = c - 'a' + 26;
+    } else if ((c >= '0') && (c <= '9')) {
+        ret = c - '0' + 52;
+    } else if (c == '+') {
+        ret = 62;
+    } else if (c == '/') {
+        ret = 63;
+    } else if (c == '=') {
+        ret = 64;
+    } else {
+        ret = 65;
+    }
+    return ret;
+}
+/**
+ * @brief decodes a string as base64 RFC2045
+ *
+ * @param input  The input string to use
+ * @param ilen   The length of the input string
+ * @param output The output string
+ * @param olen   The length of the output buffer
+ *
+ * @return number of characters in return string
+ */
+uint16_t
+attoHTTPBase64Decode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen)
+{
+    int8_t c[4];
+    uint16_t o = 0;
+    uint16_t i;
+    for (i = 0; i < ilen; i+=4) {
+        if ((i+4) > ilen) {
+            // i+4 should equal ilen, as it should always be a multiple of 4 characters.
+            // If it is not, then we should exit.
+            break;
+        }
+        c[0] = _attoHTTPBase64DecodeChar(input[i]);
+        c[1] = _attoHTTPBase64DecodeChar(input[i+1]);
+        c[2] = _attoHTTPBase64DecodeChar(input[i+2]);
+        c[3] = _attoHTTPBase64DecodeChar(input[i+3]);
+        if (o >= olen) break;
+        output[o++] = ((c[0]<<2) & 0xFC) | ((c[1]>>4) & 0x03);
+        if (o >= olen) break;
+        if (c[2] < 64) {
+            output[o++] = ((c[1]<<4) & 0xF0) | (c[2]>>2 & 0x0F);
+            if (o >= olen) break;
+            if (c[3] < 64) {
+                output[o++] = ((c[2]<<6) & 0xC0) | (c[3] & 0x3F);
+                if (o >= olen) break;
+            } else {
+                output[o++] = ((c[2]<<6) & 0xC0);
+                if (o >= olen) break;
+            }
+        } else {
+            output[o++] = (c[1]<<4) & 0xF0;
+            if (o >= olen) break;
+        }
+    }
+    if (o < olen) {
+        output[o] = 0;
+    }
+    return o;
+}
 #endif
