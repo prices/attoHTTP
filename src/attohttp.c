@@ -1228,24 +1228,23 @@ attoHTTPBase64Decode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen
     uint16_t o = 0;
     uint16_t i;
     for (i = 0; i < ilen; i+=4) {
-        if ((i+4) > ilen) {
-            // i+4 should equal ilen, as it should always be a multiple of 4 characters.
-            // If it is not, then we should exit.
-            break;
-        }
         c[0] = _attoHTTPBase64DecodeChar(input[i]);
-        c[1] = _attoHTTPBase64DecodeChar(input[i+1]);
-        c[2] = _attoHTTPBase64DecodeChar(input[i+2]);
-        c[3] = _attoHTTPBase64DecodeChar(input[i+3]);
+        c[1] = (i+1 < ilen) ? _attoHTTPBase64DecodeChar(input[i+1]) : 65;
+        c[2] = (i+2 < ilen) ? _attoHTTPBase64DecodeChar(input[i+2]) : 65;
+        c[3] = (i+3 < ilen) ? _attoHTTPBase64DecodeChar(input[i+3]) : 65;
         if (o >= olen) break;
-        output[o++] = ((c[0]<<2) & 0xFC) | ((c[1]>>4) & 0x03);
-        if (o >= olen) break;
-        if (c[2] < 64) {
-            output[o++] = ((c[1]<<4) & 0xF0) | (c[2]>>2 & 0x0F);
+        if (c[1] < 64) {
+            output[o++] = ((c[0]<<2) & 0xFC) | ((c[1]>>4) & 0x03);
             if (o >= olen) break;
-            if (c[3] < 64) {
-                output[o++] = ((c[2]<<6) & 0xC0) | (c[3] & 0x3F);
+            if (c[2] < 64) {
+                output[o++] = ((c[1]<<4) & 0xF0) | (c[2]>>2 & 0x0F);
                 if (o >= olen) break;
+                if (c[3] < 64) {
+                    output[o++] = ((c[2]<<6) & 0xC0) | (c[3] & 0x3F);
+                    if (o >= olen) break;
+                } else {
+                    break;
+                }
             } else {
                 break;
             }

@@ -139,7 +139,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
      *
      * @return void
      */
-    FCT_TEST_BGN(testBase64Decode2CharShort) {
+    FCT_TEST_BGN(testBase64Decode2CharShortPaddingCorrect) {
         uint16_t ret;
         int8_t input[] = "aW5wdXQ6c3RyaW5nMQ==";
         int8_t expect[] = "input:string1";
@@ -154,7 +154,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
      *
      * @return void
      */
-    FCT_TEST_BGN(testBase64Decode1CharShort) {
+    FCT_TEST_BGN(testBase64Decode1CharShortPaddingCorrect) {
         uint16_t ret;
         int8_t input[] = "aW5wdXQ6c3RyaW5nMTI=";
         int8_t expect[] = "input:string12";
@@ -169,10 +169,10 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
      *
      * @return void
      */
-    FCT_TEST_BGN(testBase64DecodeInput1CharTooSmall) {
+    FCT_TEST_BGN(testBase64DecodeInput1CharTooSmallNoPadding) {
         uint16_t ret;
         int8_t input[] = "aW5wdXQ6c3RyaW5nMQ=";
-        int8_t expect[] = "input:string";
+        int8_t expect[] = "input:string1";
         int8_t output[64];
         ret = attoHTTPBase64Decode(input, strlen((char *)input), output, sizeof(output));
         CheckRet(strlen((char *)expect), ret);
@@ -184,9 +184,24 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
      *
      * @return void
      */
-    FCT_TEST_BGN(testBase64DecodeInput2CharTooSmall) {
+    FCT_TEST_BGN(testBase64DecodeInput2CharTooSmallNoPadding) {
         uint16_t ret;
         int8_t input[] = "aW5wdXQ6c3RyaW5nMQ";
+        int8_t expect[] = "input:string1";
+        int8_t output[64];
+        ret = attoHTTPBase64Decode(input, strlen((char *)input), output, sizeof(output));
+        CheckRet(strlen((char *)expect), ret);
+        fct_chk_eq_str((char *)expect, (char *)output);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief 2 characters too small in input
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testBase64DecodeInput3CharTooSmallNoPadding) {
+        uint16_t ret;
+        int8_t input[] = "aW5wdXQ6c3RyaW5nM";
         int8_t expect[] = "input:string";
         int8_t output[64];
         ret = attoHTTPBase64Decode(input, strlen((char *)input), output, sizeof(output));
