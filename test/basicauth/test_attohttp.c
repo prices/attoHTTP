@@ -31,11 +31,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 #include "attohttp.h"
 #include "test.h"
 
+#define TEST_AUTH_1 "asdf1234567890asdf"
+#define TEST_AUTH_TOO_LONG "01234567891123456789212345678931234567894123456789512345678961234567897123456789"
+
 int8_t attoHTTPWrapperCheckAuth(uint8_t auth, int8_t *cred)
 {
+    if (strncmp(TEST_AUTH_1, (char *)cred, sizeof(TEST_AUTH_1)) == 0) {
+        return 1;
+    } else if (strncmp(TEST_AUTH_TOO_LONG, (char *)cred, sizeof(TEST_AUTH_TOO_LONG)) == 0) {
+        return 1;
+    }
+
     return 0;
 }
 
@@ -276,6 +286,36 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
         ret = attoHTTPExecute(
             (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\nAuthorization: Basic asdfasdfasdfasdfasdf\r\n\r\n",
             (void *)write_buffer
+        );
+        CheckUnauthorized(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETPageGoodAuth) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\nAuthorization: Basic " TEST_AUTH_1 "\r\n\r\n",
+                              (void *)write_buffer
+        );
+        CheckDefault(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETPageGoodAuthBufferOverrun) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\nAuthorization: Basic " TEST_AUTH_TOO_LONG "\r\n\r\n",
+                              (void *)write_buffer
         );
         CheckUnauthorized(ret);
     }
