@@ -129,6 +129,15 @@ uint8_t _attoHTTPParseJSONParam_sblevel;
 uint8_t _attoHTTPParseJSONParam_baselevel;
 /** @var A counter for the JSON parser */
 uint8_t _attoHTTPParseJSONParam_counter;
+/** @var This says we are authenticated */
+uint8_t _attoHTTPAuthenticated;
+
+#if defined(ATTOHTTP_BASIC_AUTH) || defined(ATTOHTTP_DIGEST_AUTH)
+static const uint8_t *_authtypes[] = {
+    [BASIC_AUTH] = (uint8_t *)"Basic",
+    [DIGEST_AUTH] = (uint8_t *)"Digest",
+};
+#endif
 
 /** @var This is a map of our mime types */
 static const uint8_t *_mimetypes[] = {
@@ -140,6 +149,7 @@ static const uint8_t *_mimetypes[] = {
     [APPLICATION_XWWWFORMURLENCODED] = (uint8_t *)"application/x-www-form-urlencoded",
     [IMAGE_PNG] = (uint8_t *)"image/png"
 };
+
 
 /***************************************************************************
  * @endcond
@@ -158,6 +168,11 @@ static const uint8_t *_mimetypes[] = {
 static inline void
 _attoHTTPInitRun(void)
 {
+#if defined(ATTOHTTP_BASIC_AUTH)
+    _attoHTTPAuthenticated = 0;
+#else 
+    _attoHTTPAuthenticated = 1;
+#endif
     _attoHTTPMethod = NOTSUPPORTED;
     _attoHTTPVersion = VUNKNOWN;
     _attoHTTP_url_len = 0;
@@ -388,6 +403,34 @@ _attoHTTPParseVersion()
     return ret;
 }
 /**
+ * @brief Checks the Auth, based on what is given in the Authorization header
+ *
+ * @param auth The authentication type
+ * @param cred The credential string, NULL terminated
+ * 
+ * @return 1 if the auth succeeded, 0 otherwise
+ */
+static inline int8_t
+_attoHTTPCheckAuth(authtype_t auth, int8_t *cred)
+{
+    int8_t ret = 0;
+    switch (auth) {
+#if defined(ATTOHTTP_BASIC_AUTH) || defined(ATTOHTTP_DIGEST_AUTH)
+        case BASIC_AUTH:
+        case DIGEST_AUTH:
+            ret = attoHTTPWrapperCheckAuth((uint8_t)auth, cred);
+            break;
+#endif
+        default:
+            _attoHTTP_returnCode = UNSUPPORTED;
+            break;
+    }
+    if ((ret == 0) && (_attoHTTP_returnCode == RUNKNOWN)) {
+        _attoHTTP_returnCode = UNAUTHORIZED;
+    }
+    return ret;
+}
+/**
  * @brief Parses the next header
  *
  * @param name      The buffer to store the name in
@@ -460,6 +503,22 @@ _attoHTTPParseHeaders(void)
                     break;
                 }
             }
+        } else if (strncasecmp((char *)name, "authorization", sizeof(name)) == 0) {
+#if defined(ATTOHTTP_BASIC_AUTH) || defined(ATTOHTTP_DIGEST_AUTH)
+            int8_t *ptr;
+            for (i = 0; i < ATTOHTTP_AUTH_TYPES; i++) {
+                ptr = (int8_t *)strstr((char *)value, (char *)_authtypes[i]);
+                if (ptr != NULL) {
+                    ptr += strlen((char *)_authtypes[i]) + 1;
+                    _attoHTTPAuthenticated = _attoHTTPCheckAuth(i, ptr);
+                    break;
+                }
+            }
+            // This means we didn't find anything
+            if (i >= ATTOHTTP_AUTH_TYPES) {
+                _attoHTTP_returnCode = UNAUTHORIZED;
+            }
+#endif
         }
     }
     return ret;
@@ -598,6 +657,40 @@ _attoHTTPParseURLParamChar(char *c)
     }
     return ret;
 
+}
+/**
+ * @brief Sends out the headers requiring authentication
+ *
+ * @param headers Extra headers to send.  Each header should end with HTTPEOL
+ *
+ * @return The number of characters printed
+ */
+uint16_t
+_attoHTTPSendAuthHeaders(char *headers)
+{
+    uint16_t chars = 0;
+    if (_attoHTTP_firstlineSent == 0) {
+        attoHTTPFirstLine(UNAUTHORIZED);
+    }
+    if (_attoHTTP_headersSent == 0) {
+#if defined(ATTOHTTP_BASIC_AUTH)
+        chars += attoHTTPprintf("WWW-Authenticate: Basic realm=\"%s\"" HTTPEOL, ATTOHTTP_AUTH_REALM);
+#else
+#if defined(ATTOHTTP_DIGEST_AUTH)
+        chars += attoHTTPprintf("WWW-Authenticate: Digest realm=\"%s\",", ATTOHTTP_AUTH_REALM);
+        chars += attoHTTPprintf("qop=\"auth,auth-int\",");
+        chars += attoHTTPprintf("nonce=\"%s\",", ATTOHTTP_AUTH_REALM);
+        chars += attoHTTPprintf("opaque=\"%s\"" HTTPEOL, ATTOHTTP_AUTH_REALM);
+        
+#endif
+#endif
+        if (headers != NULL) {
+            chars += attoHTTPprint(headers);
+        }
+        chars += attoHTTPprint(HTTPEOL);
+        _attoHTTP_headersSent = 1;
+    }
+    return chars;
 }
 /***************************************************************************
  * @endcond
@@ -1107,6 +1200,9 @@ attoHTTPExecute(void *read, void *write)
     if (_attoHTTP_returnCode == RUNKNOWN) {
         _attoHTTPParseHeaders();
     }
+    if (!_attoHTTPAuthenticated) {
+        _attoHTTP_returnCode = UNAUTHORIZED;
+    }
     if (_attoHTTP_returnCode == RUNKNOWN) {
         _attoHTTP_returnCode = NOT_FOUND;
 
@@ -1120,7 +1216,11 @@ attoHTTPExecute(void *read, void *write)
     if (_attoHTTP_returnCode == RUNKNOWN) {
         _attoHTTP_returnCode = INTERNAL_ERROR;
     }
-    attoHTTPFirstLine(_attoHTTP_returnCode);
+    if (_attoHTTP_returnCode == UNAUTHORIZED) {
+        _attoHTTPSendAuthHeaders(NULL);
+    } else {
+        attoHTTPFirstLine(_attoHTTP_returnCode);
+    }
 #ifdef __DEBUG__
     printf("Return Code %d" HTTPEOL, _attoHTTP_returnCode);
 #endif

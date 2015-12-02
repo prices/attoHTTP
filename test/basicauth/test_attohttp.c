@@ -34,8 +34,19 @@
 #include "attohttp.h"
 #include "test.h"
 
-#define WRITE_BUFFER_SIZE 1024
+int8_t attoHTTPWrapperCheckAuth(uint8_t auth, int8_t *cred)
+{
+    return 0;
+}
 
+static const uint8_t default_content[] = "Default";
+static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nDefault";
+
+#define WRITE_BUFFER_SIZE 1024
+#define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
+#define CheckUnauthorized(ret) fct_xchk((ret == UNAUTHORIZED), "Return was not 'UNAUTHORIZED'"); fct_chk_eq_str("HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"attoHTTP Server\"\r\n\r\n", write_buffer)
+#define CheckNotFound(ret) fct_xchk((ret == NOT_FOUND), "Return was not 'NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
+#define CheckDefault(ret) fct_xchk((ret == OK), "Return was not 'OK'"); fct_chk_eq_str(default_return, write_buffer)
 #define CheckRet(expect, value) fct_xchk((expect == value), "Expected %d got %d", expect, value)
 char write_buffer[WRITE_BUFFER_SIZE];
 
@@ -222,6 +233,51 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
         ret = attoHTTPBase64Decode(input, strlen((char *)input), output, sizeof(output));
         CheckRet(strlen((char *)expect), ret);
         fct_chk_eq_str((char *)expect, (char *)output);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETPageNoAuthHeader) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
+            (void *)write_buffer
+        );
+        CheckUnauthorized(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETPageBadHeaderAuthName) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\nAuthorization: BadAuth asdfasdfasdfasdfasdf\r\n\r\n",
+            (void *)write_buffer
+        );
+        CheckUnauthorized(ret);
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testGETPageBadAuth) {
+        returncode_t ret;
+        attoHTTPAddPage("/index.html", default_content, sizeof(default_content), TEXT_HTML);
+        ret = attoHTTPExecute(
+            (void *)"GET /index.html HTTP/1.0\r\nAccept: text/html\r\nAuthorization: Basic asdfasdfasdfasdfasdf\r\n\r\n",
+            (void *)write_buffer
+        );
+        CheckUnauthorized(ret);
     }
     FCT_TEST_END()
 

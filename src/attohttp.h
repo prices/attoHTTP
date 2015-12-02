@@ -83,7 +83,11 @@
 # define ATTOHTTP_HEADER_NAME_SIZE 32
 #endif
 #ifndef ATTOHTTP_HEADER_VALUE_SIZE
-# define ATTOHTTP_HEADER_VALUE_SIZE 64
+# if defined(ATTOHTTP_BASIC_AUTH)
+#  define ATTOHTTP_HEADER_VALUE_SIZE 256
+# else
+#  define ATTOHTTP_HEADER_VALUE_SIZE 64
+# endif
 #endif
 #ifndef ATTOHTTP_PAGE_BUFFERS
 # define ATTOHTTP_PAGE_BUFFERS 8
@@ -96,6 +100,9 @@
 #endif
 #ifndef ATTOHTTP_READ_TIMEOUT
 # define ATTOHTTP_READ_TIMEOUT 500
+#endif
+#ifndef ATTOHTTP_AUTH_REALM
+# define ATTOHTTP_AUTH_REALM "attoHTTP Server"
 #endif
 
 #define HTTP_METHOD_GET "GET"
@@ -134,6 +141,19 @@ typedef enum
     NOT_FOUND = 404,
     RUNKNOWN = 510
 } returncode_t;
+/**
+ * @brief The authentication type
+ *
+ * This is the return status for the main functions of the HTTP server.
+ *  * `OK`           Everything worked.
+ *  * `SERVER_ERROR` Some unknown thing went wrong.
+ */
+typedef enum
+{
+    BASIC_AUTH,
+    DIGEST_AUTH
+} authtype_t;
+#define ATTOHTTP_AUTH_TYPES 2
 
 /**
  * @brief These are the different HTTP methods

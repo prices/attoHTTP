@@ -85,6 +85,14 @@ uint16_t attoHTTPGetByte(void *read, uint8_t *byte);
  * @return 1 if a character was read, 0 otherwise.
  */
 uint16_t attoHTTPSetByte(void *write, uint8_t byte);
-
+/**
+ * @brief Checks the Auth, based on what is given in the Authorization header
+ *
+ * @param auth The authentication type
+ * @param cred The credential string, NULL terminated
+ * 
+ * @return 1 if the auth succeeded, 0 otherwise
+ */
+int8_t attoHTTPWrapperCheckAuth(uint8_t auth, int8_t *cred);
 
 #endif // #ifndef __ATTOHTTP_CONFIG_H__
