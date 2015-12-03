@@ -666,7 +666,7 @@ _attoHTTPParseURLParamChar(char *c)
  * @return The number of characters printed
  */
 uint16_t
-_attoHTTPSendAuthHeaders(char *headers)
+_attoHTTPSendAuthMessage(char *headers)
 {
     uint16_t chars = 0;
     if (_attoHTTP_firstlineSent == 0) {
@@ -689,6 +689,7 @@ _attoHTTPSendAuthHeaders(char *headers)
         }
         chars += attoHTTPprint(HTTPEOL);
         _attoHTTP_headersSent = 1;
+        chars += attoHTTPprint(ATTOHTTP_AUTH_ERROR_MSG);
     }
     return chars;
 }
@@ -1217,7 +1218,7 @@ attoHTTPExecute(void *read, void *write)
         _attoHTTP_returnCode = INTERNAL_ERROR;
     }
     if (_attoHTTP_returnCode == UNAUTHORIZED) {
-        _attoHTTPSendAuthHeaders(NULL);
+        _attoHTTPSendAuthMessage(NULL);
     } else {
         attoHTTPFirstLine(_attoHTTP_returnCode);
     }

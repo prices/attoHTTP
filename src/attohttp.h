@@ -100,6 +100,9 @@
 #ifndef ATTOHTTP_AUTH_REALM
 # define ATTOHTTP_AUTH_REALM "attoHTTP Server"
 #endif
+#ifndef ATTOHTTP_AUTH_ERROR_MSG
+# define ATTOHTTP_AUTH_ERROR_MSG "<!DOCTYPE html><html><head><title>Invalid Request</title></head><body><h1>Invalid Request</h1></body></html>"
+#endif
 
 #define HTTP_METHOD_GET "GET"
 #define HTTP_METHOD_PUT "PUT"
