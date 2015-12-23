@@ -863,9 +863,10 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
                     _attoHTTPParseJSONParam_baselevel = c;
                 }
                 continue;
-            } else if ((c == '}') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_baselevel == '{')) {
+            } else if ((c == '}') && (_attoHTTPParseJSONParam_cblevel <= 1) && (_attoHTTPParseJSONParam_baselevel == '{')) {
                 // Ignore the first one
                 _attoHTTPParseJSONParam_cblevel--;
+                _attoHTTPPushC(c);
                 break;
             } else if ((c == '[') && (level == 0)) {
                 // Ignore the first one
@@ -891,7 +892,7 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
                 }
                 if (c == '}') {
                     _attoHTTPParseJSONParam_cblevel--;
-                    if (_attoHTTPParseJSONParam_cblevel == 1) {
+                    if (_attoHTTPParseJSONParam_cblevel <= 1) {
                         break;
                     }
                 }
@@ -917,7 +918,6 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
         snprintf(n, nl, "%d", _attoHTTPParseJSONParam_counter++);
         name_len = 0;
     }
-
     return name_len == 0;
 
 }
