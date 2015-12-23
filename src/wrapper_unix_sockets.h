@@ -178,13 +178,14 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
             if (ret < 0) {
                 if (errno != EINTR) {
                     perror("select");
+                    close(sock);
                     exit(errno);
                 }
-            } else if (ret == 0) {
-                close(sock);
+//            } else if (ret == 0) {
+                //close(sock);
                 // Set the saved socket to -1
-                *(int16_t *)read = -1;
-                ret = -1;
+//                *(int16_t *)read = -1;
+//                ret = 0;
             } else if ((ret > 0) && FD_ISSET(sock, &active)) {
                 ret = recv(sock, byte, 1, 0);
             }
@@ -221,8 +222,21 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
  */
 static inline uint16_t
 attoHTTPSetByte(void *write, uint8_t byte) {
+    uint16_t ret;
     int16_t sock = *(int16_t *)write;
-    return send(sock, &byte, 1, 0);
+    ret = send(sock, &byte, 1, 0);
+    #ifdef __DEBUG__
+    if (byte < 32) {
+        printf("[%d]", byte);
+    }
+    if (byte == 10) {
+        printf("\r");
+    }
+    if (byte != 13) {
+        printf("%c", byte);
+    }
+    #endif
+    return ret;
 }
 
 
