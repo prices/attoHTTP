@@ -72,7 +72,7 @@ attoHTTPWrapperInit(uint16_t port)
         perror("Socket");
         exit(EXIT_FAILURE);
     }
-    printf("Trying to create network socket on port %d...\n", port);
+    printf("Trying to create network socket on port %d...\r\n", port);
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY;
     server.sin_port = htons(port);
@@ -87,7 +87,7 @@ attoHTTPWrapperInit(uint16_t port)
         exit(EXIT_FAILURE);
     }
 
-    printf("Connected on port %d on socket %d.\n", port, attoHTTPUnixSock);
+    printf("Connected on port %d on socket %d.\r\n", port, attoHTTPUnixSock);
 }
 /**
  * @brief The main function for the wrapper
@@ -143,7 +143,7 @@ static inline void
 attoHTTPWrapperEnd(void)
 {
     close(attoHTTPUnixSock);
-    printf("Disconnected from socket %d\n", attoHTTPUnixSock);
+    printf("Disconnected from socket %d\r\n", attoHTTPUnixSock);
 }
 #endif //#ifdef __ATTOHTTP_H_DONE__
 

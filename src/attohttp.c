@@ -179,7 +179,7 @@ _attoHTTPInitRun(void)
     _attoHTTP_headersDone = 0;
     _attoHTTP_headersSent = 0;
     _attoHTTP_firstlineSent = 0;
-    _attoHTTP_returnCode = RUNKNOWN;
+    _attoHTTP_returnCode = STATUS_RUNKNOWN;
     _attoHTTP_extra_c = -1;
     _attoHTTP_url_params = NULL;
     _attoHTTP_url_params_start = ATTOHTTP_URL_BUFFER_SIZE;
@@ -308,13 +308,13 @@ _attoHTTPParseMethod(void)
         } else if (strncmp(HTTP_METHOD_PATCH, (char *)buffer, sizeof(buffer)) == 0) {
             _attoHTTPMethod = PATCH;
         } else { 
-            _attoHTTP_returnCode = UNSUPPORTED;
+            _attoHTTP_returnCode = STATUS_UNSUPPORTED;
         }
 #ifdef __DEBUG__
         printf("Got Method '%s' (%d)" HTTPEOL, buffer, _attoHTTPMethod);
 #endif
     } else {
-        _attoHTTP_returnCode = INTERNAL_ERROR;
+        _attoHTTP_returnCode = STATUS_INTERNAL_ERROR;
     }
 
     return ret;
@@ -422,11 +422,11 @@ _attoHTTPCheckAuth(authtype_t auth, int8_t *cred)
             break;
 #endif
         default:
-            _attoHTTP_returnCode = UNSUPPORTED;
+            _attoHTTP_returnCode = STATUS_UNSUPPORTED;
             break;
     }
-    if ((ret == 0) && (_attoHTTP_returnCode == RUNKNOWN)) {
-        _attoHTTP_returnCode = UNAUTHORIZED;
+    if ((ret == 0) && (_attoHTTP_returnCode == STATUS_RUNKNOWN)) {
+        _attoHTTP_returnCode = STATUS_UNAUTHORIZED;
     }
     return ret;
 }
@@ -516,7 +516,7 @@ _attoHTTPParseHeaders(void)
             }
             // This means we didn't find anything
             if (i >= ATTOHTTP_AUTH_TYPES) {
-                _attoHTTP_returnCode = UNAUTHORIZED;
+                _attoHTTP_returnCode = STATUS_UNAUTHORIZED;
             }
 #endif
         }
@@ -577,7 +577,7 @@ _attoHTTPFindAPICallback(void)
         if (cmdlvl > 0) {
             _attoHTTP_returnCode = _attoHTTPDefaultCallback(_attoHTTPMethod, _attoHTTP_accept, command, id, cmdlvl, idlvl);
         } else {
-            _attoHTTP_returnCode = INTERNAL_ERROR;
+            _attoHTTP_returnCode = STATUS_INTERNAL_ERROR;
         }
     }
     return ret;
@@ -608,7 +608,7 @@ _attoHTTPFindPage(void)
     }
     if (page != NULL) {
         if (_attoHTTPMethod == GET) {
-            _attoHTTP_returnCode = OK;
+            _attoHTTP_returnCode = STATUS_OK;
             _attoHTTP_contenttype = page->type;
             _attoHTTP_contentlength = page->size;
             attoHTTPSendHeaders();
@@ -619,7 +619,7 @@ _attoHTTPFindPage(void)
         printf("Wrong method on page: %d\r\n", _attoHTTPMethod);
 #endif
             
-            _attoHTTP_returnCode = UNSUPPORTED;
+            _attoHTTP_returnCode = STATUS_UNSUPPORTED;
             ret = -1;
         }
     }
@@ -670,7 +670,7 @@ _attoHTTPSendAuthMessage(char *headers)
 {
     uint16_t chars = 0;
     if (_attoHTTP_firstlineSent == 0) {
-        attoHTTPFirstLine(UNAUTHORIZED);
+        attoHTTPFirstLine(STATUS_UNAUTHORIZED);
     }
     if (_attoHTTP_headersSent == 0) {
 #if defined(ATTOHTTP_BASIC_AUTH)
@@ -760,7 +760,7 @@ attoHTTPprint(const char *buffer)
  * @brief Prints out the first line of the reply
  *
  * This currently supports the following return codes:
- *  - 200 OK
+ *  - 200 STATUS_OK
  *  - 202 Accepted
  *  - 400 Bad Request
  *  - 404 Not Fount
@@ -782,7 +782,7 @@ attoHTTPFirstLine(uint16_t code)
         _attoHTTP_firstlineSent = 1;
         switch (code) {
             case 200:
-                str = "OK";
+                str = "STATUS_OK";
                 break;
             case 202:
                 str = "Accepted";
@@ -802,7 +802,7 @@ attoHTTPFirstLine(uint16_t code)
             default:
                 str = "Internal Error";
                 code = 500;
-                _attoHTTP_returnCode = INTERNAL_ERROR;
+                _attoHTTP_returnCode = STATUS_INTERNAL_ERROR;
                 break;
         }
         chars += attoHTTPprintf(HTTP_VERSION " %d %s" HTTPEOL, code, str);
@@ -1088,7 +1088,7 @@ attoHTTPAddPage(const char *url, const uint8_t *page, uint16_t page_len, mimetyp
     return ret;
 }
 /**
- * @brief This prints out the OK message
+ * @brief This prints out the STATUS_OK message
  *
  * @return The number of characters printed
  */
@@ -1194,30 +1194,30 @@ attoHTTPExecute(void *read, void *write)
     // Parse the first line
     _attoHTTPParseMethod();
 
-    if (_attoHTTP_returnCode == RUNKNOWN) {
+    if (_attoHTTP_returnCode == STATUS_RUNKNOWN) {
         _attoHTTPParseURL();
         _attoHTTPParseVersion();
     }
-    if (_attoHTTP_returnCode == RUNKNOWN) {
+    if (_attoHTTP_returnCode == STATUS_RUNKNOWN) {
         _attoHTTPParseHeaders();
     }
     if (!_attoHTTPAuthenticated) {
-        _attoHTTP_returnCode = UNAUTHORIZED;
+        _attoHTTP_returnCode = STATUS_UNAUTHORIZED;
     }
-    if (_attoHTTP_returnCode == RUNKNOWN) {
-        _attoHTTP_returnCode = NOT_FOUND;
+    if (_attoHTTP_returnCode == STATUS_RUNKNOWN) {
+        _attoHTTP_returnCode = STATUS_NOT_FOUND;
 
         ret = _attoHTTPFindPage();
-        if ((ret > 0) && (_attoHTTP_returnCode == RUNKNOWN)) {
-            _attoHTTP_returnCode = OK;
+        if ((ret > 0) && (_attoHTTP_returnCode == STATUS_RUNKNOWN)) {
+            _attoHTTP_returnCode = STATUS_OK;
         } else if (ret == 0) {
             // Not found in the find page, so check the RESTful stuff
         }
     }
-    if (_attoHTTP_returnCode == RUNKNOWN) {
-        _attoHTTP_returnCode = INTERNAL_ERROR;
+    if (_attoHTTP_returnCode == STATUS_RUNKNOWN) {
+        _attoHTTP_returnCode = STATUS_INTERNAL_ERROR;
     }
-    if (_attoHTTP_returnCode == UNAUTHORIZED) {
+    if (_attoHTTP_returnCode == STATUS_UNAUTHORIZED) {
         _attoHTTPSendAuthMessage(NULL);
     } else {
         attoHTTPFirstLine(_attoHTTP_returnCode);

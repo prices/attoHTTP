@@ -131,14 +131,14 @@
  */
 typedef enum
 {
-    OK = 200,
-    ACCEPTED = 202,
-    UNSUPPORTED = 501,
-    BADREQUEST = 400,
-    UNAUTHORIZED = 401,
-    INTERNAL_ERROR = 500,
-    NOT_FOUND = 404,
-    RUNKNOWN = 510
+    STATUS_OK = 200,
+    STATUS_ACCEPTED = 202,
+    STATUS_UNSUPPORTED = 501,
+    STATUS_BADREQUEST = 400,
+    STATUS_UNAUTHORIZED = 401,
+    STATUS_INTERNAL_ERROR = 500,
+    STATUS_NOT_FOUND = 404,
+    STATUS_RUNKNOWN = 510
 } returncode_t;
 /**
  * @brief The authentication type
