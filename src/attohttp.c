@@ -732,7 +732,7 @@ attoHTTPprintf(const char *format, ...)
     uint16_t count;
     va_list ap;
     va_start(ap, format);
-    count = vsnprintf(buffer, 128, format, ap);
+    count = vsnprintf(buffer, sizeof(buffer), format, ap);
     va_end(ap);
     // This makes sure it is always zero terminated.
     if (count == ATTOHTTP_PRINTF_BUFFER_SIZE) {
