@@ -225,17 +225,6 @@ attoHTTPSetByte(void *write, uint8_t byte) {
     uint16_t ret;
     int16_t sock = *(int16_t *)write;
     ret = send(sock, &byte, 1, 0);
-    #ifdef __DEBUG__
-    if (byte < 32) {
-        printf("[%d]", byte);
-    }
-    if (byte == 10) {
-        printf("\r");
-    }
-    if (byte != 13) {
-        printf("%c", byte);
-    }
-    #endif
     return ret;
 }
 
