@@ -32,17 +32,12 @@
 
 #include <stdint.h>
 #include <inttypes.h>
-#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/un.h>
+#include <winsock2.h>
 #include <sys/time.h>
 
 #include "attohttp.h"
@@ -68,6 +63,16 @@ attoHTTPWrapperInit(uint16_t port)
     attoHTTPInit();
     struct sockaddr_in server;
     attoHTTPUnixSock = -1;
+
+    int iResult;
+    WSADATA wsaData;
+    // Initialize Winsock
+    iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+    if (iResult != 0) {
+        printf("WSAStartup failed: %d\n", iResult);
+        exitclean(EXIT_FAILURE);
+    }
+
     if ((attoHTTPUnixSock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("Socket");
         exit(EXIT_FAILURE);
@@ -105,7 +110,7 @@ attoHTTPWrapperInit(uint16_t port)
 static inline void
 attoHTTPWrapperMain(uint8_t setup)
 {
-    socklen_t size;
+    int size;
     struct sockaddr_in clientname;
     fd_set active;
     int16_t newSock;
@@ -150,6 +155,7 @@ static inline void
 attoHTTPWrapperEnd(void)
 {
     close(attoHTTPUnixSock);
+    WSACleanup();
 #ifdef _DEBUG_
     printf("Disconnected from socket %d\r\n", attoHTTPUnixSock);
 #endif
@@ -196,7 +202,7 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
 //                *(int16_t *)read = -1;
 //                ret = 0;
             } else if ((ret > 0) && FD_ISSET(sock, &active)) {
-                ret = recv(sock, byte, 1, 0);
+                ret = recv(sock, (char *)byte, 1, 0);
             }
         } while (ret < 0);
 #ifdef __DEBUG__
@@ -233,7 +239,7 @@ static inline uint16_t
 attoHTTPSetByte(void *write, uint8_t byte) {
     uint16_t ret;
     int16_t sock = *(int16_t *)write;
-    ret = send(sock, &byte, 1, 0);
+    ret = send(sock, (char *)&byte, 1, 0);
     return ret;
 }
 

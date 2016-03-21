@@ -173,7 +173,7 @@ _attoHTTPInitRun(void)
 #else 
     _attoHTTPAuthenticated = 1;
 #endif
-    _attoHTTPMethod = NOTSUPPORTED;
+    _attoHTTPMethod = METHOD_NOTSUPPORTED;
     _attoHTTPVersion = VUNKNOWN;
     _attoHTTP_url_len = 0;
     _attoHTTP_headersDone = 0;
@@ -298,15 +298,15 @@ _attoHTTPParseMethod(void)
         buffer[ptr] = 0;
 
         if (strncmp(HTTP_METHOD_GET, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = GET;
+            _attoHTTPMethod = METHOD_GET;
         } else if (strncmp(HTTP_METHOD_POST, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = POST;
+            _attoHTTPMethod = METHOD_POST;
         } else if (strncmp(HTTP_METHOD_PUT, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = PUT;
+            _attoHTTPMethod = METHOD_PUT;
         } else if (strncmp(HTTP_METHOD_DELETE, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = DELETE;
+            _attoHTTPMethod = METHOD_DELETE;
         } else if (strncmp(HTTP_METHOD_PATCH, (char *)buffer, sizeof(buffer)) == 0) {
-            _attoHTTPMethod = PATCH;
+            _attoHTTPMethod = METHOD_PATCH;
         } else { 
             _attoHTTP_returnCode = STATUS_UNSUPPORTED;
         }
@@ -607,7 +607,7 @@ _attoHTTPFindPage(void)
         }
     }
     if (page != NULL) {
-        if (_attoHTTPMethod == GET) {
+        if (_attoHTTPMethod == METHOD_GET) {
             _attoHTTP_returnCode = STATUS_OK;
             _attoHTTP_contenttype = page->type;
             _attoHTTP_contentlength = page->size;
@@ -643,7 +643,7 @@ uint8_t
 _attoHTTPParseURLParamChar(char *c)
 {
     uint8_t ret = 0;
-    if (_attoHTTPMethod == GET) {
+    if (_attoHTTPMethod == METHOD_GET) {
         if (_attoHTTP_url_params_start++ < ATTOHTTP_URL_BUFFER_SIZE) {
             *c = *_attoHTTP_url_params;
             _attoHTTP_url_params++;
@@ -1017,13 +1017,13 @@ attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
     *name = 0;
     *value = 0;
     switch (_attoHTTPMethod) {
-        case GET:
+        case METHOD_GET:
             ret = attoHTTPParseURLParam(name, name_len, value, value_len);
             break;
-        case POST:
-        case PUT:
-        case PATCH:
-        case DELETE:
+        case METHOD_POST:
+        case METHOD_PUT:
+        case METHOD_PATCH:
+        case METHOD_DELETE:
             if (_attoHTTP_contenttype == APPLICATION_XWWWFORMURLENCODED) {
                 ret = attoHTTPParseURLParam(name, name_len, value, value_len);
             } else {

@@ -161,12 +161,12 @@ typedef enum
  */
 typedef enum
 {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-    PATCH,
-    NOTSUPPORTED
+    METHOD_GET,
+    METHOD_POST,
+    METHOD_PUT,
+    METHOD_DELETE,
+    METHOD_PATCH,
+    METHOD_NOTSUPPORTED
 } httpmethod_t;
 
 /**
