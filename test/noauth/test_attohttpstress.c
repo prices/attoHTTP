@@ -38,9 +38,9 @@ static const uint8_t default_content[] = "Default";
 static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 1024
-#define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
-#define CheckNotFound(ret) fct_xchk((ret == NOT_FOUND), "Return was not 'NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
-#define CheckDefault(ret) fct_xchk((ret == OK), "Return was not 'OK'"); fct_chk_eq_str(default_return, write_buffer)
+#define CheckUnsupported(ret) fct_xchk((ret == STATUS_UNSUPPORTED), "Return was not 'STATUS_UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
+#define CheckNotFound(ret) fct_xchk((ret == STATUS_NOT_FOUND), "Return was not 'STATUS_NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
+#define CheckDefault(ret) fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'"); fct_chk_eq_str(default_return, write_buffer)
 
 
 char write_buffer[WRITE_BUFFER_SIZE];
@@ -75,7 +75,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpstress)
         uint32_t i;
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
-            fct_xchk((method == GET), "Method was not 'GET'");
+            fct_xchk((method == METHOD_GET), "Method was not 'METHOD_GET'");
             fct_xchk((cmdlvl == 2), "Command level was not 2");
             fct_xchk((idlvl == 1), "Id level was not 1");
             fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
@@ -85,7 +85,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpstress)
             fct_xchk((id[1] == NULL), "id[1] != NULL");
             fct_xchk((command[2] == NULL), "command[2] != NULL");
             fct_xchk((id[2] == NULL), "id[2] != NULL");
-            return OK;
+            return STATUS_OK;
         }
         char read_buffer[] = "GET /level1/1/level2 HTTP/1.0\r\nAccept: application/json\r\n\r\n";
         attoHTTPDefaultREST(testCallback);
@@ -97,7 +97,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpstress)
                 (void *)read_buffer,
                 (void *)write_buffer
             );
-            fct_xchk((ret == OK), "Return was not 'OK'");
+            fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
         }
     }
     FCT_TEST_END()

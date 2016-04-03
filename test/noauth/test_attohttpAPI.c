@@ -38,9 +38,9 @@ static const uint8_t default_content[] = "Default";
 static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 1024
-#define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
-#define CheckNotFound(ret) fct_xchk((ret == NOT_FOUND), "Return was not 'NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
-#define CheckDefault(ret) fct_xchk((ret == OK), "Return was not 'OK'"); fct_chk_eq_str(default_return, write_buffer)
+#define CheckUnsupported(ret) fct_xchk((ret == STATUS_UNSUPPORTED), "Return was not 'STATUS_UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
+#define CheckNotFound(ret) fct_xchk((ret == STATUS_NOT_FOUND), "Return was not 'STATUS_NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
+#define CheckDefault(ret) fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'"); fct_chk_eq_str(default_return, write_buffer)
 
 
 char write_buffer[WRITE_BUFFER_SIZE];
@@ -75,7 +75,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
-            fct_xchk((method == GET), "Return was not 'GET'");
+            fct_xchk((method == METHOD_GET), "Return was not 'METHOD_GET'");
             fct_xchk((cmdlvl == 2), "Command level was not 2");
             fct_xchk((idlvl == 1), "Id level was not 1");
             fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
@@ -85,7 +85,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             fct_xchk((id[1] == NULL), "id[1] != NULL");
             fct_xchk((command[2] == NULL), "command[2] != NULL");
             fct_xchk((id[2] == NULL), "id[2] != NULL");
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -94,7 +94,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"GET /level1/1/level2 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -107,7 +107,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
-            fct_xchk((method == POST), "Return was not 'POST'");
+            fct_xchk((method == METHOD_POST), "Return was not 'METHOD_POST'");
             fct_xchk((cmdlvl == 3), "Command level was not 2");
             fct_xchk((idlvl == 3), "Id level was not 1");
             fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
@@ -117,7 +117,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             fct_chk_eq_str("2", (char *)id[1]);
             fct_chk_eq_str("level3", (char *)command[2]);
             fct_chk_eq_str("3", (char *)id[2]);
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -126,7 +126,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"POST /level1/1/level2/2/level3/3 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -139,7 +139,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
-            fct_xchk((method == PUT), "Return was not 'PUT'");
+            fct_xchk((method == METHOD_PUT), "Return was not 'METHOD_PUT'");
             fct_xchk((cmdlvl == 3), "Command level was not 2");
             fct_xchk((idlvl == 3), "Id level was not 1");
             fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
@@ -149,7 +149,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             fct_chk_eq_str("2", (char *)id[1]);
             fct_chk_eq_str("level3", (char *)command[2]);
             fct_chk_eq_str("3", (char *)id[2]);
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -158,7 +158,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"PUT /level1/1/level2/2/level3/3 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -171,7 +171,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
-            fct_xchk((method == PATCH), "Return was not 'PATCH'");
+            fct_xchk((method == METHOD_PATCH), "Return was not 'METHOD_PATCH'");
             fct_xchk((cmdlvl == 3), "Command level was not 2");
             fct_xchk((idlvl == 3), "Id level was not 1");
             fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
@@ -181,7 +181,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             fct_chk_eq_str("2", (char *)id[1]);
             fct_chk_eq_str("level3", (char *)command[2]);
             fct_chk_eq_str("3", (char *)id[2]);
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -190,7 +190,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"PATCH /level1/1/level2/2/level3/3 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -203,7 +203,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
-            fct_xchk((method == DELETE), "Return was not 'DELETE'");
+            fct_xchk((method == METHOD_DELETE), "Return was not 'METHOD_DELETE'");
             fct_xchk((cmdlvl == 3), "Command level was not 2");
             fct_xchk((idlvl == 3), "Id level was not 1");
             fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
@@ -213,7 +213,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             fct_chk_eq_str("2", (char *)id[1]);
             fct_chk_eq_str("level3", (char *)command[2]);
             fct_chk_eq_str("3", (char *)id[2]);
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -222,7 +222,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"DELETE /level1/1/level2/2/level3/3 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -235,7 +235,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
-            fct_xchk((method == GET), "Return was not 'GET'");
+            fct_xchk((method == METHOD_GET), "Return was not 'METHOD_GET'");
             fct_xchk((cmdlvl == 1), "Command level was not 1");
             fct_xchk((idlvl == 0), "Id level was not 0");
             fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
@@ -245,7 +245,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             fct_xchk((id[1] == NULL), "id[1] != NULL");
             fct_xchk((command[2] == NULL), "command[2] != NULL");
             fct_xchk((id[2] == NULL), "id[2] != NULL");
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -254,7 +254,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"GET /level1/ HTTP/1.0\r\nAccept: application/json\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -267,7 +267,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
-            fct_xchk((method == DELETE), "Return was not 'DELETE'");
+            fct_xchk((method == METHOD_DELETE), "Return was not 'METHOD_DELETE'");
             fct_xchk((cmdlvl == 1), "Command level was not 1");
             fct_xchk((idlvl == 1), "Id level was not 1");
             fct_xchk((accepted == (1<<APPLICATION_JSON)), "Accepted was not correct");
@@ -277,7 +277,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             fct_xchk((id[1] == NULL), "id[1] != NULL");
             fct_xchk((command[2] == NULL), "command[2] != NULL");
             fct_xchk((id[2] == NULL), "id[2] != NULL");
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -286,7 +286,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"DELETE /level1/1/ HTTP/1.0\r\nAccept: application/json\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
 
@@ -301,7 +301,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
             attoHTTPRESTSendHeaders(12345, "application/json", NULL);
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -310,7 +310,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"GET /level1 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
         fct_chk_eq_str("HTTP/1.0 500 Internal Error\r\nContent-Type: application/json; charset=utf-8\r\n\r\n", write_buffer);
     }
     FCT_TEST_END()
@@ -325,7 +325,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
             attoHTTPRESTSendHeaders(200, "application/json", NULL);
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -334,7 +334,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"GET /level1 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
         fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json; charset=utf-8\r\n\r\n", write_buffer);
     }
     FCT_TEST_END()
@@ -349,7 +349,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         returncode_t testCallback(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl)
         {
             attoHTTPRESTSendHeaders(200, "application/json", "Content-Encoding: gzip" HTTPEOL);
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -358,7 +358,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"GET /level1 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
         fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Encoding: gzip\r\n\r\n", write_buffer);
     }
     FCT_TEST_END()
@@ -374,7 +374,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
         {
             attoHTTPRESTSendHeaders(200, "application/json", "Content-Encoding: gzip" HTTPEOL);
             attoHTTPprintf("%s", "0123456789ABCDEF1123456789ABCDEF2123456789ABCDEF3123456789ABCDEF4123456789ABCDEF5123456789ABCDEF6123456789ABCDEF7123456789ABCDEF8123456789ABCDEF9123456789ABCDEF");
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -383,7 +383,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpAPI)
             (void *)"GET /level1 HTTP/1.0\r\nAccept: application/json\r\n\r\n",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
         fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Encoding: gzip\r\n\r\n0123456789ABCDEF1123456789ABCDEF2123456789ABCDEF3123456789ABCDEF4123456789ABCDEF5123456789ABCDEF6123456789ABCDEF7123456789ABCDE", write_buffer);
     }
     FCT_TEST_END()

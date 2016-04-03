@@ -38,9 +38,9 @@ static const uint8_t default_content[] = "Default";
 static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 1024
-#define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
-#define CheckNotFound(ret) fct_xchk((ret == NOT_FOUND), "Return was not 'NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
-#define CheckDefault(ret) fct_xchk((ret == OK), "Return was not 'OK'"); fct_chk_eq_str(default_return, write_buffer)
+#define CheckUnsupported(ret) fct_xchk((ret == STATUS_UNSUPPORTED), "Return was not 'STATUS_UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
+#define CheckNotFound(ret) fct_xchk((ret == STATUS_NOT_FOUND), "Return was not 'STATUS_NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
+#define CheckDefault(ret) fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'"); fct_chk_eq_str(default_return, write_buffer)
 
 
 char write_buffer[WRITE_BUFFER_SIZE];
@@ -330,7 +330,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
             (void *)"GET /index6.html HTTP/1.0\r\nAccept: text/html\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
         fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 7\r\n\r\nIndex6", write_buffer);
     }
     FCT_TEST_END()
@@ -347,7 +347,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttp)
             (void *)"GET /index.html HTTP/1.0\r\nAccept: text/plain\r\n\r\n",
             (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
         fct_chk_eq_str("HTTP/1.0 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 8\r\n\r\nIndex61", write_buffer);
     }
     FCT_TEST_END()

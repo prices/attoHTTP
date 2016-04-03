@@ -38,9 +38,9 @@ static const uint8_t default_content[] = "Default";
 static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 1024
-#define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
-#define CheckNotFound(ret) fct_xchk((ret == NOT_FOUND), "Return was not 'NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
-#define CheckDefault(ret) fct_xchk((ret == OK), "Return was not 'OK'"); fct_chk_eq_str(default_return, write_buffer)
+#define CheckUnsupported(ret) fct_xchk((ret == STATUS_UNSUPPORTED), "Return was not 'STATUS_UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
+#define CheckNotFound(ret) fct_xchk((ret == STATUS_NOT_FOUND), "Return was not 'STATUS_NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
+#define CheckDefault(ret) fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'"); fct_chk_eq_str(default_return, write_buffer)
 
 
 char write_buffer[WRITE_BUFFER_SIZE];
@@ -89,7 +89,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -98,7 +98,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"GET /level1?hello=1&goodbye=hereAndThere HTTP/1.0\r\nAccept: application/json\r\n\r\n",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -125,7 +125,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -134,7 +134,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"GET /level1?hello=%31&goodbye=%7Bhere%20And%20There%7d HTTP/1.0\r\nAccept: application/json\r\n\r\n",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -161,7 +161,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -170,7 +170,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n?hello=1&goodbye=hereAndThere",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -197,7 +197,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -206,7 +206,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n&hello=1&goodbye=hereAndThere",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -233,7 +233,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -242,7 +242,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nhello=%31&goodbye=%7Bhere%20And%20There%7d",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -269,7 +269,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -278,7 +278,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n{ hello:1, 'goodbye':\"hereAndThere\" }",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -305,7 +305,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -314,7 +314,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n { 'hello': 1, \"good bye\": [ 'here And', \"There a\" ] }",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
 
@@ -342,7 +342,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -351,7 +351,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n { 'hello': 1, \"good bye\": { 'here': 'And', \"There\": \" a\" } }",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -379,7 +379,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -388,7 +388,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n[ 'hello', \"hereAndThere\" ]",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -411,7 +411,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -420,7 +420,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n'hello there'",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -443,7 +443,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -452,7 +452,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n\"hello there\"",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -475,7 +475,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -484,7 +484,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n123456",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -507,7 +507,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -516,7 +516,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/json\r\n\r\n1.23456",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
     /**
@@ -543,7 +543,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             ret = attoHTTPParseParam(name, 40, value, 40);
             fct_xchk((ret == 0), "Return was not 0");
 
-            return OK;
+            return STATUS_OK;
         }
 
         attoHTTPDefaultREST(testCallback);
@@ -552,7 +552,7 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpParams)
             (void *)"POST /level1 HTTP/1.0\r\nAccept: application/json\r\nContent-Type: application/x-www-form-urlencoded; charset=UTF-8\r\n\r\n?hello=1&goodbye=hereAndThere\r\n",
                               (void *)write_buffer
         );
-        fct_xchk((ret == OK), "Return was not 'OK'");
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
     }
     FCT_TEST_END()
 

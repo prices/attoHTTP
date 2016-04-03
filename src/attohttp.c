@@ -782,7 +782,7 @@ attoHTTPFirstLine(uint16_t code)
         _attoHTTP_firstlineSent = 1;
         switch (code) {
             case 200:
-                str = "STATUS_OK";
+                str = "OK";
                 break;
             case 202:
                 str = "Accepted";

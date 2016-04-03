@@ -53,10 +53,10 @@ static const uint8_t default_content[] = "Default";
 static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nDefault";
 
 #define WRITE_BUFFER_SIZE 2048
-#define CheckUnsupported(ret) fct_xchk((ret == UNSUPPORTED), "Return was not 'UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
-#define CheckUnauthorized(ret) fct_xchk((ret == UNAUTHORIZED), "Return was not 'UNAUTHORIZED'"); fct_chk_eq_str("HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"attoHTTP Server\"\r\n\r\n" ATTOHTTP_AUTH_ERROR_MSG, write_buffer)
-#define CheckNotFound(ret) fct_xchk((ret == NOT_FOUND), "Return was not 'NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
-#define CheckDefault(ret) fct_xchk((ret == OK), "Return was not 'OK'"); fct_chk_eq_str(default_return, write_buffer)
+#define CheckUnsupported(ret) fct_xchk((ret == STATUS_UNSUPPORTED), "Return was not 'STATUS_UNSUPPORTED'"); fct_chk_eq_str("HTTP/1.0 501 Not Implemented\r\n", write_buffer)
+#define CheckUnauthorized(ret) fct_xchk((ret == STATUS_UNAUTHORIZED), "Return was not 'STATUS_UNAUTHORIZED'"); fct_chk_eq_str("HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"attoHTTP Server\"\r\n\r\n" ATTOHTTP_AUTH_ERROR_MSG, write_buffer)
+#define CheckNotFound(ret) fct_xchk((ret == STATUS_NOT_FOUND), "Return was not 'STATUS_NOT_FOUND'"); fct_chk_eq_str("HTTP/1.0 404 Not Found\r\n", write_buffer)
+#define CheckDefault(ret) fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'"); fct_chk_eq_str(default_return, write_buffer)
 #define CheckRet(expect, value) fct_xchk((expect == value), "Expected %d got %d", expect, value)
 char write_buffer[WRITE_BUFFER_SIZE];
 
