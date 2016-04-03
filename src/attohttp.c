@@ -37,11 +37,18 @@
 #include <strings.h>
 #include <ctype.h>
 #include "attohttp.h"
+#if defined(ATTOHTTP_DIGEST_AUTH)
+# include "md5.h"
+#endif
 
 #define _attoHTTPCheckPage(page)  (!_attoHTTPPageEmpty(page) && (0 == strncmp((char *)_attoHTTP_url, (char *)page.url, sizeof(page.url))))
 #define _attoHTTPDefaultPage() (!_attoHTTPPageEmpty(_attoHTTPDefaultPage) && (strncmp((char *)_attoHTTP_url, "/", sizeof(_attoHTTP_url)) == 0) && (_attoHTTP_url_len == 1))
 #define _attoHTTPPushC(char) _attoHTTP_extra_c = char
 #define _attoHTTPPageEmpty(page) (page.content == NULL)
+
+#if defined(ATTOHTTP_BASIC_AUTH) && defined(ATTOHTTP_DIGEST_AUTH)
+# error Please choose BASIC auth or DIGEST auth.  Both does not work.
+#endif
 
 unsigned char favicon_ico[] = {
   0x1f, 0x8b, 0x08, 0x08, 0xbf, 0x58, 0xcd, 0x55, 0x00, 0x03, 0x66, 0x61,
@@ -168,7 +175,7 @@ static const uint8_t *_mimetypes[] = {
 static inline void
 _attoHTTPInitRun(void)
 {
-#if defined(ATTOHTTP_BASIC_AUTH)
+#if defined(ATTOHTTP_BASIC_AUTH) || defined(ATTOHTTP_DIGEST_AUTH)
     _attoHTTPAuthenticated = 0;
 #else 
     _attoHTTPAuthenticated = 1;
@@ -675,14 +682,12 @@ _attoHTTPSendAuthMessage(char *headers)
     if (_attoHTTP_headersSent == 0) {
 #if defined(ATTOHTTP_BASIC_AUTH)
         chars += attoHTTPprintf("WWW-Authenticate: Basic realm=\"%s\"" HTTPEOL, ATTOHTTP_AUTH_REALM);
-#else
+#endif
 #if defined(ATTOHTTP_DIGEST_AUTH)
         chars += attoHTTPprintf("WWW-Authenticate: Digest realm=\"%s\",", ATTOHTTP_AUTH_REALM);
         chars += attoHTTPprintf("qop=\"auth,auth-int\",");
         chars += attoHTTPprintf("nonce=\"%s\",", ATTOHTTP_AUTH_REALM);
         chars += attoHTTPprintf("opaque=\"%s\"" HTTPEOL, ATTOHTTP_AUTH_REALM);
-        
-#endif
 #endif
         if (headers != NULL) {
             chars += attoHTTPprint(headers);
@@ -1360,3 +1365,8 @@ attoHTTPBase64Decode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen
     return o;
 }
 #endif
+
+#if defined(ATTOHTTP_DIGEST_AUTH)
+# include "md5.c"
+#endif
+
