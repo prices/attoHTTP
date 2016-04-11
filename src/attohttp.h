@@ -235,6 +235,7 @@ uint8_t attoHTTPAddPage(const char *url, const uint8_t *page, uint16_t page_len,
 uint8_t attoHTTPDefaultPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type);
 uint16_t attoHTTPwrite(const uint8_t *buffer, uint16_t len);
 uint16_t attoHTTPprintf(const char *format, ...);
+uint16_t attoHTTPvprintf(const char *format, va_list ap);
 uint16_t attoHTTPprint(const char *buffer);
 uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
 uint16_t attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers);

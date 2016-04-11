@@ -733,12 +733,27 @@ attoHTTPwrite(const uint8_t *buffer, uint16_t len)
 uint16_t
 attoHTTPprintf(const char *format, ...)
 {
-    char buffer[ATTOHTTP_PRINTF_BUFFER_SIZE];
     uint16_t count;
     va_list ap;
     va_start(ap, format);
-    count = vsnprintf(buffer, sizeof(buffer), format, ap);
+    count = attoHTTPvprintf(format, ap);
     va_end(ap);
+    return count;
+}
+/**
+ * @brief Printf like function to write characters out to the client
+ *
+ * @param format The format string
+ * @param ap     The list of arguments
+ *
+ * @return The number of characters written
+ */
+uint16_t
+attoHTTPvprintf(const char *format, va_list ap)
+{
+    char buffer[ATTOHTTP_PRINTF_BUFFER_SIZE];
+    uint16_t count;
+    count = vsnprintf(buffer, sizeof(buffer), format, ap);
     // This makes sure it is always zero terminated.
     if (count == ATTOHTTP_PRINTF_BUFFER_SIZE) {
         buffer[ATTOHTTP_PRINTF_BUFFER_SIZE - 1] = 0;
