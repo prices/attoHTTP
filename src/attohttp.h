@@ -209,7 +209,7 @@ typedef returncode_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t acc
 typedef struct {
     char url[ATTOHTTP_PAGE_URL_SIZE];
     const uint8_t *content;
-    uint16_t size;
+    uint32_t size;
     mimetypes_t type;
 } attoHTTPPage_t;
 
@@ -221,7 +221,7 @@ typedef struct {
 typedef struct _attoHTTPRestAPI {
     char url[ATTOHTTP_PAGE_URL_SIZE];
     const uint8_t *content;
-    uint16_t size;
+    uint32_t size;
     mimetypes_t type;
 } attoHTTPRestAPI_t;
 
@@ -231,9 +231,9 @@ extern "C" {
 returncode_t attoHTTPExecute(void *read, void *write);
 uint8_t attoHTTPSendHeaders();
 void attoHTTPInit(void);
-uint8_t attoHTTPAddPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type);
-uint8_t attoHTTPDefaultPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type);
-uint16_t attoHTTPwrite(const uint8_t *buffer, uint16_t len);
+uint8_t attoHTTPAddPage(const char *url, const uint8_t *page, uint32_t page_len, mimetypes_t type);
+uint8_t attoHTTPDefaultPage(const char *url, const uint8_t *page, uint32_t page_len, mimetypes_t type);
+uint32_t attoHTTPwrite(const uint8_t *buffer, uint32_t len);
 uint16_t attoHTTPprintf(const char *format, ...);
 uint16_t attoHTTPvprintf(const char *format, va_list ap);
 uint16_t attoHTTPprint(const char *buffer);

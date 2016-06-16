@@ -709,10 +709,10 @@ _attoHTTPSendAuthMessage(char *headers)
  *
  * @return The number of characters written
  */
-uint16_t
-attoHTTPwrite(const uint8_t *buffer, uint16_t len)
+uint32_t
+attoHTTPwrite(const uint8_t *buffer, uint32_t len)
 {
-    uint16_t ret = 0;
+    uint32_t ret = 0;
     uint8_t c;
     while (len-- > 0) {
         c = *buffer++;
@@ -1066,7 +1066,7 @@ attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
  * @return 1 on success, 0 on failure
  */
 uint8_t
-attoHTTPDefaultPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type)
+attoHTTPDefaultPage(const char *url, const uint8_t *page, uint32_t page_len, mimetypes_t type)
 {
     uint8_t ret = 0;
     if (_attoHTTPPageEmpty(_attoHTTPDefaultPage)) {
@@ -1090,7 +1090,7 @@ attoHTTPDefaultPage(const char *url, const uint8_t *page, uint16_t page_len, mim
  * @return 1 on success, 0 on failure
  */
 uint8_t
-attoHTTPAddPage(const char *url, const uint8_t *page, uint16_t page_len, mimetypes_t type)
+attoHTTPAddPage(const char *url, const uint8_t *page, uint32_t page_len, mimetypes_t type)
 {
     uint8_t i;
     uint8_t ret = 0;
