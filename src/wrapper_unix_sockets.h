@@ -47,12 +47,40 @@
 
 #include "attohttp.h"
 
+#ifndef ATTOHTTP_SEND_BUFFER_SIZE
+# define ATTOHTTP_SEND_BUFFER_SIZE 517
+#endif
+
+char attoHTTPSendBuffer[ATTOHTTP_SEND_BUFFER_SIZE];
+uint32_t attoHTTPBufferPtr;
+
+/**
+ * @brief Clears the send buffer and sends it out
+ *
+ * @param sock The socket to write to
+ *
+ * @return number of bytes written out
+ */
+static inline uint32_t
+attoHTTPWrapperClearBuffer(int sock)
+{
+    uint16_t ret = 0;
+    if (attoHTTPBufferPtr > 0) {
+        ret = send(sock, attoHTTPSendBuffer, attoHTTPBufferPtr, 0);
+        attoHTTPBufferPtr = 0;
+    }
+#ifdef _DEBUG_
+    printf("Sent: %d bytes\r\n", ret);
+#endif
+    return ret;
+}
+
+
 #ifdef __ATTOHTTP_H_DONE__
-// Done include this bit until the attohttp.h file has been included
+// Don't include this bit until the attohttp.h file has been included
 
 /** This is our unix socket */
 int attoHTTPUnixSock;
-
 /**
  * @brief The init function for the wrapper
  *
@@ -130,7 +158,9 @@ attoHTTPWrapperMain(uint8_t setup)
 #ifdef _DEBUG_
         printf("New connection on socket %d\r\n", newSock);
 #endif
+        attoHTTPBufferPtr = 0;
         attoHTTPExecute((void *)&newSock, (void *)&newSock);
+        attoHTTPWrapperClearBuffer(newSock);
 #ifdef _DEBUG_
         printf("Closing connection on socket %d\r\n", newSock);
 #endif
@@ -155,6 +185,7 @@ attoHTTPWrapperEnd(void)
 #endif
 }
 #endif //#ifdef __ATTOHTTP_H_DONE__
+
 
 /**
  * @brief User function to get a byte
@@ -231,10 +262,12 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
  */
 static inline uint16_t
 attoHTTPSetByte(void *write, uint8_t byte) {
-    uint16_t ret;
     int16_t sock = *(int16_t *)write;
-    ret = send(sock, &byte, 1, 0);
-    return ret;
+    if (attoHTTPBufferPtr > (ATTOHTTP_SEND_BUFFER_SIZE - 5)) {
+        attoHTTPWrapperClearBuffer(sock);
+    }
+    attoHTTPSendBuffer[attoHTTPBufferPtr++] = byte;
+    return 1;
 }
 
 
