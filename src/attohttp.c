@@ -672,10 +672,10 @@ _attoHTTPParseURLParamChar(char *c)
  *
  * @return The number of characters printed
  */
-uint16_t
+uint32_t
 _attoHTTPSendAuthMessage(char *headers)
 {
-    uint16_t chars = 0;
+    uint32_t chars = 0;
     if (_attoHTTP_firstlineSent == 0) {
         attoHTTPFirstLine(STATUS_UNAUTHORIZED);
     }
@@ -771,7 +771,7 @@ attoHTTPvprintf(const char *format, va_list ap)
  *
  * @return The number of characters written
  */
-uint16_t
+uint32_t
 attoHTTPprint(const char *buffer)
 {
     return attoHTTPwrite((uint8_t *)buffer, strlen(buffer));
@@ -1112,7 +1112,7 @@ attoHTTPAddPage(const char *url, const uint8_t *page, uint32_t page_len, mimetyp
  *
  * @return The number of characters printed
  */
-uint8_t
+uint16_t
 attoHTTPSendHeaders(void)
 {
     uint16_t chars = 0;

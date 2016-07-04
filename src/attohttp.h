@@ -229,14 +229,14 @@ typedef struct _attoHTTPRestAPI {
 extern "C" {
 #endif
 returncode_t attoHTTPExecute(void *read, void *write);
-uint8_t attoHTTPSendHeaders();
+uint16_t attoHTTPSendHeaders();
 void attoHTTPInit(void);
 uint8_t attoHTTPAddPage(const char *url, const uint8_t *page, uint32_t page_len, mimetypes_t type);
 uint8_t attoHTTPDefaultPage(const char *url, const uint8_t *page, uint32_t page_len, mimetypes_t type);
 uint32_t attoHTTPwrite(const uint8_t *buffer, uint32_t len);
 uint16_t attoHTTPprintf(const char *format, ...);
 uint16_t attoHTTPvprintf(const char *format, va_list ap);
-uint16_t attoHTTPprint(const char *buffer);
+uint32_t attoHTTPprint(const char *buffer);
 uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
 uint16_t attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers);
 uint16_t attoHTTPFirstLine(uint16_t code);
