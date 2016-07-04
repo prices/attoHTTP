@@ -33,6 +33,7 @@
 #include <inttypes.h>
 #include "attohttp.h"
 #include "test.h"
+#include "bigfile.h"
 
 static const uint8_t default_content[] = "Default";
 static const char default_return[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nDefault";
@@ -99,6 +100,27 @@ FCTMF_FIXTURE_SUITE_BGN(test_attohttpstress)
             );
             fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
         }
+    }
+    FCT_TEST_END()
+    /**
+     * @brief This tests the empty queue functions
+     *
+     * @return void
+     */
+    FCT_TEST_BGN(testBigFile) {
+        returncode_t ret;
+        char buffer[BIGFILE_LEN + 10000];
+        char read_buffer[] = "GET /index.html HTTP/1.0\r\nAccept: application/json\r\n\r\n";
+        attoHTTPAddPage("/index.html", bigfile, BIGFILE_LEN, TEXT_HTML);
+
+        NewConnection();
+        ret = attoHTTPExecute(
+            (void *)read_buffer,
+            (void *)buffer
+        );
+        fct_xchk((ret == STATUS_OK), "Return was not 'STATUS_OK'");
+        fct_xchk((strlen(buffer) == (BIGFILE_LEN + 84)), "Return was not big enough");
+
     }
     FCT_TEST_END()
 

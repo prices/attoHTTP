@@ -32,7 +32,7 @@
 #include "test.h"
 
 uint8_t *TestWriteString, *TestReadString;
-uint16_t TestWriteCount, TestReadCount;
+uint32_t TestWriteCount, TestReadCount;
 
 FCT_BGN()
 {
