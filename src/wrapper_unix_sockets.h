@@ -190,11 +190,6 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
                     close(sock);
                     exit(errno);
                 }
-//            } else if (ret == 0) {
-                //close(sock);
-                // Set the saved socket to -1
-//                *(int16_t *)read = -1;
-//                ret = 0;
             } else if ((ret > 0) && FD_ISSET(sock, &active)) {
                 ret = recv(sock, byte, 1, 0);
             }
@@ -229,11 +224,21 @@ attoHTTPGetByte(void *read, uint8_t *byte) {
  *
  * @return 1 if a character was read, 0 otherwise.
  */
-static inline uint16_t
+static inline int16_t
 attoHTTPSetByte(void *write, uint8_t byte) {
-    uint16_t ret;
+    int16_t ret = 0;
     int16_t sock = *(int16_t *)write;
-    ret = send(sock, &byte, 1, 0);
+    while (ret <= 0) {
+        ret = send(sock, &byte, 1, MSG_NOSIGNAL);
+        if (ret < 0) {
+            if ((errno != EINTR) && (errno != EAGAIN)) {
+#ifdef __DEBUG__
+                perror("Send");
+#endif
+                break;
+            }
+        }
+    }
     return ret;
 }
 
