@@ -34,6 +34,8 @@
 
 void TestInit(void);
 
+extern uint8_t *TestWriteString, *TestReadString;
+
 #define NewConnection() TestInit()
 #endif
 

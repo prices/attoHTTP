@@ -80,7 +80,7 @@
 # define ATTOHTTP_URL_BUFFER_SIZE 64
 #endif
 #ifndef ATTOHTTP_HEADER_NAME_SIZE
-# define ATTOHTTP_HEADER_NAME_SIZE 32
+# define ATTOHTTP_HEADER_NAME_SIZE 64
 #endif
 #ifndef ATTOHTTP_HEADER_VALUE_SIZE
 # define ATTOHTTP_HEADER_VALUE_SIZE 64
@@ -241,6 +241,7 @@ uint8_t attoHTTPDefaultREST(attoHTTPDefAPICallback Callback);
 uint16_t attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers);
 uint16_t attoHTTPFirstLine(uint16_t code);
 uint8_t attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len);
+uint8_t attoHTTPGetRawParamChar(char *c);
 
 #ifdef ATTOHTTP_BASIC_AUTH
 uint16_t attoHTTPBase64Encode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen);

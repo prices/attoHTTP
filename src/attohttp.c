@@ -854,7 +854,7 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
         ret = _attoHTTPReadC((uint8_t *)&c);
         if ((ret > 0) && (c != 0)) {
             level = _attoHTTPParseJSONParam_cblevel + _attoHTTPParseJSONParam_sblevel;
-            if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0)) {
+            if ((c == ':') && (_attoHTTPParseJSONParam_cblevel == 1) && (_attoHTTPParseJSONParam_sblevel == 0) && (sqlevel != 1) && (dqlevel != 1)) {
                 name_len = 0;
                 divider = c;
             } else if (isspace((uint8_t)c) && (sqlevel == 0) && (dqlevel == 0) && (level <= 1)) {
@@ -862,14 +862,14 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
                 continue;
             } else if ((c == ',') && (level == 1)) {
                 break;
-            } else if ((c == '\'') && (level <= 1)) {
+            } else if ((c == '\'') && (level <= 1) && (dqlevel == 0)) {
                 if (sqlevel == 1) {
                     sqlevel = 0;
                 } else {
                     sqlevel = 1;
                 }
                 continue;
-            } else if ((c == '"') && (level <= 1)) {
+            } else if ((c == '"') && (level <= 1) && (sqlevel == 0)) {
                 if (dqlevel == 1) {
                     dqlevel = 0;
                 } else {
@@ -901,11 +901,17 @@ attoHTTPParseJSONParam(char *name, uint8_t name_len, char *value, uint8_t value_
                 break;
             } else {
                 if (name_len > 0) {
-                    *name++ = c;
-                    name_len--;
+                    // This keeps us from a buffer overrun
+                    if (name_len > 1) {
+                        *name++ = c;
+                        name_len--;
+                    }
                 } else {
-                    *value++ = c;
-                    value_len--;
+                    // This keeps us from a buffer overrun
+                    if (value_len > 1) {
+                        *value++ = c;
+                        value_len--;
+                    }
                 }
                 if (c == '{') {
                     _attoHTTPParseJSONParam_cblevel++;
@@ -1056,6 +1062,20 @@ attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len)
     return ret;
 }
 /**
+ * @brief This retrieves the next character of the parameters
+ * 
+ * Characters can only be retrieved in order.  There is no rewind.
+ *
+ * @param c This is where the character will get stored
+ *
+ * @return 1 on success, 0 on failure
+ */
+uint8_t
+attoHTTPGetRawParamChar(char *c)
+{
+    return _attoHTTPReadC((uint8_t *)c);
+}
+/**
  * @brief This adds a page to the buffer at the given URL
  *
  * @param url      The URL string to look for
@@ -1171,6 +1191,7 @@ void
 attoHTTPInit(void)
 {
     uint8_t i;
+    _attoHTTPInitRun();
     _attoHTTPDefaultPage.url[0] = 0;
     _attoHTTPDefaultPage.content = NULL;
     _attoHTTPDefaultPage.size = 0;
