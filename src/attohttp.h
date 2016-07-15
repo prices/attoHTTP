@@ -131,6 +131,7 @@
  */
 typedef enum
 {
+    STATUS_SERVERSENTEVENTS = 1,
     STATUS_OK = 200,
     STATUS_ACCEPTED = 202,
     STATUS_UNSUPPORTED = 501,
@@ -194,10 +195,11 @@ typedef enum
     TEXT_CSS = 3,
     APPLICATION_JAVASCRIPT = 4,
     APPLICATION_XWWWFORMURLENCODED = 5,
-    IMAGE_PNG = 6
+    IMAGE_PNG = 6,
+    TEXT_EVENTSTREAM = 7
 
 } mimetypes_t;
-#define ATTOHTTP_MIME_TYPES 6
+#define ATTOHTTP_MIME_TYPES 7
 
 typedef returncode_t (*attoHTTPDefAPICallback)(httpmethod_t method, uint16_t accepted, uint8_t **command, uint8_t **id, uint8_t cmdlvl, uint8_t idlvl);
 
@@ -242,6 +244,8 @@ uint16_t attoHTTPRESTSendHeaders(uint16_t code, char *type, char *headers);
 uint16_t attoHTTPFirstLine(uint16_t code);
 uint8_t attoHTTPParseParam(char *name, uint8_t name_len, char *value, uint8_t value_len);
 uint8_t attoHTTPGetRawParamChar(char *c);
+uint8_t attoHTTPServerSetEventsURL(const char *url);
+uint16_t attoHTTPSendEvent(void *write, char *event, uint16_t elen, char *data, uint16_t dlen);
 
 #ifdef ATTOHTTP_BASIC_AUTH
 uint16_t attoHTTPBase64Encode(int8_t *input, uint16_t ilen, int8_t *output, uint16_t olen);
