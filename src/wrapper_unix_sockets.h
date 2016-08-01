@@ -44,6 +44,7 @@
 #include <netinet/in.h>
 #include <sys/un.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include "attohttp.h"
 
@@ -53,6 +54,22 @@
 /** This is our unix socket */
 int attoHTTPUnixSock;
 
+/**
+ * @brief The end function for the wrapper
+ *
+ * This function closes all of the open sockets, and closes other stuff down.
+ *
+ * @return None
+ */
+static inline void
+attoHTTPWrapperEnd(void)
+{
+    close(attoHTTPUnixSock);
+#ifdef _DEBUG_
+    printf("Disconnected from socket %d\r\n", attoHTTPUnixSock);
+#endif
+    attoHTTPUnixSock = -1;
+}
 /**
  * @brief The init function for the wrapper
  *
@@ -67,30 +84,39 @@ attoHTTPWrapperInit(uint16_t port)
 {
     attoHTTPInit();
     struct sockaddr_in server;
+    int t;
+    int ret = -1;
     attoHTTPUnixSock = -1;
     if ((attoHTTPUnixSock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("Socket");
         exit(EXIT_FAILURE);
     }
-#ifdef _DEBUG_
     printf("Trying to create network socket on port %d...\r\n", port);
-#endif
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY;
     server.sin_port = htons(port);
     errno = 0;
-
-    if (bind(attoHTTPUnixSock, (struct sockaddr *) &server, sizeof(struct sockaddr_in))) {
-        perror("binding stream socket");
-        exit(EXIT_FAILURE);
+    t = time(NULL);
+    while ((ret != 0) && (t > (time(NULL) - 60))) {
+        ret = bind(attoHTTPUnixSock, (struct sockaddr *) &server, sizeof(struct sockaddr_in));
+        if (ret != 0) {
+            sleep(1);
+        }
     }
-    if (listen(attoHTTPUnixSock, 1) < 0) {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
+    if (ret == 0) {
+        if (listen(attoHTTPUnixSock, 1) < 0) {
+            perror("listen");
+            attoHTTPWrapperEnd();
+            exit(EXIT_FAILURE);
+        }
 #ifdef _DEBUG_
-    printf("Connected on port %d on socket %d.\r\n", port, attoHTTPUnixSock);
+        printf("Connected on port %d on socket %d.\r\n", port, attoHTTPUnixSock);
 #endif
+    } else {
+        perror("bind");
+        attoHTTPWrapperEnd();
+        exit(EXIT_FAILURE);
+    }
 }
 /**
  * @brief The main function for the wrapper
@@ -110,49 +136,35 @@ attoHTTPWrapperMain(uint8_t setup)
     fd_set active;
     int16_t newSock;
     int ret;
-    FD_ZERO(&active);
-    FD_SET(attoHTTPUnixSock, &active);
-    if ((ret = select(FD_SETSIZE, &active, NULL, NULL, NULL)) < 0) {
-        if (errno != EINTR) {
-            perror("select");
-            exit(EXIT_FAILURE);
+    if (attoHTTPUnixSock > 0) {
+        FD_ZERO(&active);
+        FD_SET(attoHTTPUnixSock, &active);
+        if ((ret = select(FD_SETSIZE, &active, NULL, NULL, NULL)) < 0) {
+            if (errno != EINTR) {
+                perror("select");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        if ((ret > 0) && FD_ISSET(attoHTTPUnixSock, &active)) {
+            // Connection request on original socket.
+            size = sizeof(clientname);
+            newSock = accept(attoHTTPUnixSock, (struct sockaddr *) &clientname, &size);
+            if (newSock < 0) {
+                perror("accept");
+                exit(EXIT_FAILURE);
+            }
+#ifdef _DEBUG_
+            printf("New connection on socket %d\r\n", newSock);
+#endif
+            attoHTTPExecute((void *)&newSock, (void *)&newSock);
+#ifdef _DEBUG_
+            printf("Closing connection on socket %d\r\n", newSock);
+#endif
+            close(newSock);
         }
     }
 
-    if ((ret > 0) && FD_ISSET(attoHTTPUnixSock, &active)) {
-        // Connection request on original socket.
-        size = sizeof(clientname);
-        newSock = accept(attoHTTPUnixSock, (struct sockaddr *) &clientname, &size);
-        if (newSock < 0) {
-            perror("accept");
-            exit(EXIT_FAILURE);
-        }
-#ifdef _DEBUG_
-        printf("New connection on socket %d\r\n", newSock);
-#endif
-        attoHTTPExecute((void *)&newSock, (void *)&newSock);
-#ifdef _DEBUG_
-        printf("Closing connection on socket %d\r\n", newSock);
-#endif
-        close(newSock);
-    }
-
-
-}
-/**
- * @brief The end function for the wrapper
- *
- * This function closes all of the open sockets, and closes other stuff down.
- *
- * @return None
- */
-static inline void
-attoHTTPWrapperEnd(void)
-{
-    close(attoHTTPUnixSock);
-#ifdef _DEBUG_
-    printf("Disconnected from socket %d\r\n", attoHTTPUnixSock);
-#endif
 }
 #endif //#ifdef __ATTOHTTP_H_DONE__
 
