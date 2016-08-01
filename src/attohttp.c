@@ -45,6 +45,7 @@
 #define _attoHTTPDefaultPage() (!_attoHTTPPageEmpty(_attoHTTPDefaultPage) && (strncmp((char *)_attoHTTP_url, "/", sizeof(_attoHTTP_url)) == 0) && (_attoHTTP_url_len == 1))
 #define _attoHTTPPushC(char) _attoHTTP_extra_c = char
 #define _attoHTTPPageEmpty(page) (page.content == NULL)
+#define _attoHTTPServerSentEvents() (strlen(_attoHTTPServerSentEventsPage) && (strncmp((char *)_attoHTTP_url, _attoHTTPServerSentEventsPage, sizeof(_attoHTTP_url)) == 0))
 
 #if defined(ATTOHTTP_BASIC_AUTH) && defined(ATTOHTTP_DIGEST_AUTH)
 # error Please choose BASIC auth or DIGEST auth.  Both does not work.
@@ -127,6 +128,8 @@ attoHTTPPage_t _attoHTTPPages[ATTOHTTP_PAGE_BUFFERS];
 attoHTTPPage_t _attoHTTPDefaultPage;
 /** @var The default API callback function is stored here */
 attoHTTPDefAPICallback _attoHTTPDefaultCallback;
+/** @var The server sent events page is here */
+char _attoHTTPServerSentEventsPage[ATTOHTTP_PAGE_URL_SIZE];
 
 /** @var The curly brace level we are at */
 uint8_t _attoHTTPParseJSONParam_cblevel;
@@ -154,7 +157,8 @@ static const uint8_t *_mimetypes[] = {
     [TEXT_CSS] = (uint8_t *)"text/css",
     [APPLICATION_JAVASCRIPT] = (uint8_t *)"application/javascript",
     [APPLICATION_XWWWFORMURLENCODED] = (uint8_t *)"application/x-www-form-urlencoded",
-    [IMAGE_PNG] = (uint8_t *)"image/png"
+    [IMAGE_PNG] = (uint8_t *)"image/png",
+    [TEXT_EVENTSTREAM] = (uint8_t *)"text/event-stream"
 };
 
 
@@ -590,6 +594,23 @@ _attoHTTPFindAPICallback(void)
     return ret;
 }
 /**
+ * @brief This prints out the STATUS_OK message
+ *
+ * @return The number of characters printed
+ */
+uint16_t
+attoHTTPSendServerSentEventHeaders(void)
+{
+    uint16_t chars = 0;
+    attoHTTPFirstLine(STATUS_OK);
+    chars += attoHTTPprintf("Content-Type: %s" HTTPEOL, _mimetypes[TEXT_EVENTSTREAM]);
+    chars += attoHTTPprint("Cache-Control: no-cache" HTTPEOL);
+    chars += attoHTTPprint(HTTPEOL);
+    _attoHTTP_returnCode = STATUS_SERVERSENTEVENTS;
+    _attoHTTP_headersSent = 1;
+    return chars;
+}
+/**
  * @brief Finds the page associated with the URL.
  *
  * If no pages are found, it will try to run an API callback function using
@@ -632,7 +653,12 @@ _attoHTTPFindPage(void)
     }
 
     if (ret == 0) {
-        ret = _attoHTTPFindAPICallback();
+        if (_attoHTTPServerSentEvents()) {
+            attoHTTPSendServerSentEventHeaders();
+            ret = 1;
+        } else {
+            ret = _attoHTTPFindAPICallback();
+        }
     }
     return ret;
 }
@@ -965,6 +991,41 @@ attoHTTPDefaultREST(attoHTTPDefAPICallback Callback)
     return ret;
 }
 /**
+ * @brief This sends out an event
+ *
+ * @param *write The first argument for attoHTTPSetByte.
+ *
+ * @return 1 on success, 0 on failure
+ */
+uint16_t
+attoHTTPSendEvent(void *write, char *event, uint16_t elen, char *data, uint16_t dlen)
+{
+    char *estr = "event:";
+    char *dstr = "data:";
+    uint16_t ret = 0;
+    uint8_t i;
+    if (elen > 0) {
+        for (i = 0; i < strlen(estr); i++) {
+            ret += attoHTTPSetByte(write, estr[i]);
+        }
+        while (elen-- > 0) {
+            ret += attoHTTPSetByte(write, *event++);
+        }
+        ret += attoHTTPSetByte(write, '\n');
+    }
+    if (dlen > 0) {
+        for (i = 0; i < strlen(dstr); i++) {
+            ret += attoHTTPSetByte(write, dstr[i]);
+        }
+        while (dlen-- > 0) {
+            ret += attoHTTPSetByte(write, *data++);
+        }
+        ret += attoHTTPSetByte(write, '\n');
+    }
+    ret += attoHTTPSetByte(write, '\n');
+    return ret;
+}
+/**
  * @brief This retrieves the next parameter in a URL string
  *
  * @param name      The buffer to put the name into
@@ -1100,6 +1161,23 @@ attoHTTPDefaultPage(const char *url, const uint8_t *page, uint32_t page_len, mim
     return ret;
 }
 /**
+ * @brief This adds the server sent events url
+ *
+ * @param url The URL string to look for
+ *
+ * @return 1 on success, 0 on failure
+ */
+uint8_t
+attoHTTPServerSetEventsURL(const char *url)
+{
+    uint8_t ret = 0;
+    if (strlen(_attoHTTPServerSentEventsPage) == 0) {
+        strncpy(_attoHTTPServerSentEventsPage, url, sizeof(_attoHTTPServerSentEventsPage));
+        ret = 1;
+    }
+    return ret;
+}
+/**
  * @brief This adds the default page to the buffer at the given URL
  *
  * @param url      The URL string to look for
@@ -1193,6 +1271,7 @@ attoHTTPInit(void)
     uint8_t i;
     _attoHTTPInitRun();
     _attoHTTPDefaultPage.url[0] = 0;
+    _attoHTTPServerSentEventsPage[0] = 0;
     _attoHTTPDefaultPage.content = NULL;
     _attoHTTPDefaultPage.size = 0;
     _attoHTTPDefaultPage.type = TEXT_HTML;
@@ -1258,8 +1337,11 @@ attoHTTPExecute(void *read, void *write)
     if (_attoHTTP_returnCode == STATUS_RUNKNOWN) {
         _attoHTTP_returnCode = STATUS_INTERNAL_ERROR;
     }
+
     if (_attoHTTP_returnCode == STATUS_UNAUTHORIZED) {
         _attoHTTPSendAuthMessage(NULL);
+    } else if (_attoHTTP_returnCode == STATUS_SERVERSENTEVENTS) {
+        attoHTTPFirstLine(STATUS_OK);
     } else {
         attoHTTPFirstLine(_attoHTTP_returnCode);
     }

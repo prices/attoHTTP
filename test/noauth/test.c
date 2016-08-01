@@ -37,6 +37,7 @@ uint32_t TestWriteCount, TestReadCount;
 FCT_BGN()
 {
     FCTMF_SUITE_CALL(test_attohttp);
+    FCTMF_SUITE_CALL(test_attohttpserversentevents);
     FCTMF_SUITE_CALL(test_attohttpjson);
     FCTMF_SUITE_CALL(test_attohttpAPI);
     FCTMF_SUITE_CALL(test_attohttpParams);
