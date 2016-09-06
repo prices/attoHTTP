@@ -71,6 +71,9 @@
 #ifndef __ATTOHTTP_H__
 #define __ATTOHTTP_H__
 
+#include <stdio.h>
+#include <stdarg.h>
+
 #include "attohttp_config.h"
 
 #ifndef ATTOHTTP_PRINTF_BUFFER_SIZE
